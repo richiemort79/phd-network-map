@@ -6,7 +6,7 @@
 <title>Doctoral network map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   box-sizing:border-box;
@@ -182,12 +182,12 @@ const KEY='phd-network-map-v2';
 let uid=0; const nid=p=>p+(Date.now().toString(36))+(uid++);
 
 const DEF_OPTS={colorBy:'wp',sizing:'equal',showLinks:false,showTitles:false,opacity:0.72,showLegend:false,showShares:false,themeGap:40};
-const DEF_LABELS={prefix:'DC',numbering:'global',left:'Scale of study',right:'Research Theme',color:'#5B4A9B'};
+const DEF_LABELS={prefix:'DC',numbering:'global',left:'Scale of study',right:'Research Theme',color:'#6B4FA0'};
 function example(){
   const wps=[
-    {id:'wpM',name:'Molecular',code:'M',color:'#5E4B9C'},
-    {id:'wpS',name:'Subcellular',code:'S',color:'#A0508F'},
-    {id:'wpT',name:'Tissue & Organism',code:'T',color:'#C9A253'}
+    {id:'wpM',name:'Molecular',code:'M',color:'#6B4FA0'},
+    {id:'wpS',name:'Subcellular',code:'S',color:'#B65094'},
+    {id:'wpT',name:'Tissue & Organism',code:'T',color:'#DFAA49'}
   ];
   // [title, Origin, Evolution, Function] — weights are placeholders estimated from the reference figure
   const P={
@@ -198,7 +198,7 @@ function example(){
   const projects=[];
   wps.forEach(wp=>P[wp.id].forEach((r,i)=>projects.push({id:wp.id+'p'+i,wp:wp.id,title:r[0],w:r.slice(1)})));
   return {
-    themes:[{name:'Origin',color:'#24508F'},{name:'Evolution',color:'#C9C25B'},{name:'Function',color:'#D57F5F'}],
+    themes:[{name:'Origin',color:'#005392'},{name:'Evolution',color:'#D4C35A'},{name:'Function',color:'#DC7E65'}],
     wps, projects, links:[],
     opts:{...DEF_OPTS}, labels:{...DEF_LABELS}
   };
@@ -244,7 +244,7 @@ function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads up
 
 /* ---------- figure ---------- */
 const R=300, TRK=20, VB=550;
-const FONT="'Arial Rounded MT Bold','Arial Rounded MT','M PLUS Rounded 1c',Arial,sans-serif";
+const FONT="'Arial Rounded MT Bold','Arial Rounded MT','Nunito',Arial,sans-serif";
 function splitTitle(t){ // long titles wrap onto two lines at the space nearest the middle
   if(t.length<=10||t.indexOf(' ')<0)return [t];
   const mid=t.length/2;let best=-1;
