@@ -77,6 +77,10 @@ summary{cursor:pointer;font:600 16px var(--serif)}
 .links{display:grid;gap:8px;margin-top:10px}
 .links .row{display:grid;grid-template-columns:1fr 1fr 64px 24px;gap:6px;align-items:center}
 .links .row input[type=range]{width:100%}
+.labels{display:grid;gap:9px;margin-top:10px}
+.labels label{display:grid;gap:3px;font-size:13px;color:var(--muted)}
+.labels label.chk{display:flex;align-items:center;gap:8px}
+.labels label.chk input[type=color]{flex:none}
 textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;margin-top:8px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .note{font-size:13px;color:var(--muted);min-height:1.4em;margin-top:6px}
@@ -103,7 +107,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;ma
   </header>
 
   <div class="figure-col">
-    <div class="plate"><svg id="fig" viewBox="-540 -540 1080 1080" role="img" aria-label="Circular map of PhD projects, work packages and themes"></svg></div>
+    <div class="plate"><svg id="fig" viewBox="-550 -550 1100 1100" role="img" aria-label="Circular map of PhD projects, work packages and themes"></svg></div>
     <div class="toolbar">
       <span class="seg" role="group" aria-label="Colour ribbons by">
         <button data-color="wp">Colour by work package</button><button data-color="theme">Colour by theme</button>
@@ -133,6 +137,23 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;ma
     </details>
 
     <details>
+      <summary>Figure labels</summary>
+      <div class="labels" id="labels">
+        <label>Project code prefix <input type="text" data-lb="prefix" maxlength="6"></label>
+        <label>Numbering
+          <select data-lb="numbering">
+            <option value="global">Run through all projects (DC1, DC2 …)</option>
+            <option value="wp">Restart in each work package (M1, S1 …)</option>
+          </select></label>
+        <label>Heading for project side <input type="text" data-lb="left"></label>
+        <label>Heading for theme side <input type="text" data-lb="right"></label>
+        <label class="chk"><input type="color" data-lb="color" aria-label="Heading colour"> Heading colour</label>
+        <label class="chk"><input type="checkbox" data-lo="showLegend"> Show legend</label>
+        <label class="chk"><input type="checkbox" data-lo="showShares"> Show each theme’s % of effort</label>
+      </div>
+    </details>
+
+    <details>
       <summary>Links between projects</summary>
       <p class="hint" style="margin-top:8px">Shared methods, co-supervision or data exchange. Drawn as dark lines across the circle.</p>
       <div class="links" id="links"></div>
@@ -156,29 +177,33 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;ma
 
 <script>
 (function(){
-const KEY='phd-network-map-v1';
+const KEY='phd-network-map-v2';
 let uid=0; const nid=p=>p+(Date.now().toString(36))+(uid++);
 
+const DEF_OPTS={colorBy:'wp',sizing:'equal',showLinks:false,showTitles:true,opacity:0.72,showLegend:false,showShares:false};
+const DEF_LABELS={prefix:'DC',numbering:'global',left:'Scale of study',right:'Research Theme',color:'#5B4A9B'};
 function example(){
   const wps=[
-    {id:'wpM',name:'Molecular',code:'M',color:'#1F7A8C'},
-    {id:'wpS',name:'Subcellular',code:'S',color:'#8E3B8A'},
-    {id:'wpT',name:'Tissue / macroscale',code:'T',color:'#B7791F'}
+    {id:'wpM',name:'Molecular',code:'M',color:'#5E4B9C'},
+    {id:'wpS',name:'Subcellular',code:'S',color:'#A0508F'},
+    {id:'wpT',name:'Tissue & Organism',code:'T',color:'#C9A253'}
   ];
-  const W={wpM:[[8,4,2],[6,6,3],[2,5,8],[3,3,9],[7,2,4]],
-           wpS:[[5,7,3],[2,4,8],[6,5,5],[1,3,9],[4,8,2]],
-           wpT:[[2,6,7],[3,8,4],[1,2,9],[6,6,6],[2,7,5]]};
+  // [title, Origin, Evolution, Function] — weights are placeholders estimated from the reference figure
+  const P={
+    wpM:[['Dark matter',6,2,4],['Extreme conditions',5,3,4],['IOM vs Melanin',4,2,6],['PyM AM models',3,2,7],['EM PM models',3,2,7]],
+    wpS:[['MS Chem Meth',2,5,5],['MS Chem Shape',1,5,6],['Archaeal melanin',2,8,2],['Bacterial melanin',2,8,2],['Fungal melanin',2,7,3]],
+    wpT:[['Thermo-mech',1,2,9],['MS organisation',1,3,8],['Colour traits',2,6,4],['MS dynamics',1,4,7]]
+  };
   const projects=[];
-  wps.forEach(wp=>W[wp.id].forEach((w,i)=>projects.push({id:wp.id+'p'+i,wp:wp.id,title:'Project title',w:w.slice()})));
-  const L=[['wpMp0','wpSp0',6],['wpMp2','wpSp1',4],['wpSp2','wpTp3',7],['wpMp4','wpTp1',3],['wpSp3','wpTp2',5]];
+  wps.forEach(wp=>P[wp.id].forEach((r,i)=>projects.push({id:wp.id+'p'+i,wp:wp.id,title:r[0],w:r.slice(1)})));
   return {
-    themes:[{name:'Origin',color:'#2B4C7E'},{name:'Evolution',color:'#4E8B3A'},{name:'Function',color:'#C0392B'}],
-    wps, projects,
-    links:L.map((l,i)=>({id:'l'+i,a:l[0],b:l[1],s:l[2]})),
-    opts:{colorBy:'wp',sizing:'equal',showLinks:true,showTitles:true,opacity:0.72}
+    themes:[{name:'Origin',color:'#24508F'},{name:'Evolution',color:'#C9C25B'},{name:'Function',color:'#D57F5F'}],
+    wps, projects, links:[],
+    opts:{...DEF_OPTS}, labels:{...DEF_LABELS}
   };
 }
-function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(valid(o))return o;}}catch(e){}return example();}
+function fill(o){o.opts={...DEF_OPTS,...o.opts};o.labels={...DEF_LABELS,...(o.labels||{})};return o;}
+function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(valid(o))return fill(o);}}catch(e){}return example();}
 function valid(o){return o&&Array.isArray(o.themes)&&o.themes.length===3&&Array.isArray(o.wps)&&Array.isArray(o.projects)&&Array.isArray(o.links)&&o.opts;}
 let S=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -194,7 +219,8 @@ function shade(hex,t){ // t in [-1,1]: negative darker, positive lighter
   r=Math.round(r+(m-r)*k);g=Math.round(g+(m-g)*k);b=Math.round(b+(m-b)*k);
   return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
 }
-function codeOf(p){const wp=S.wps.find(w=>w.id===p.wp);const list=S.projects.filter(q=>q.wp===p.wp);return (wp?wp.code:'?')+(list.indexOf(p)+1);}
+function ordered(){const o=[];S.wps.forEach(wp=>S.projects.filter(p=>p.wp===wp.id).forEach(p=>o.push(p)));return o;}
+function codeOf(p){if(S.labels.numbering==='global')return (S.labels.prefix||'')+(ordered().indexOf(p)+1);const wp=S.wps.find(w=>w.id===p.wp);const list=S.projects.filter(q=>q.wp===p.wp);return (wp?wp.code:'?')+(list.indexOf(p)+1);}
 function projColor(p){const list=S.projects.filter(q=>q.wp===p.wp);const i=list.indexOf(p),n=list.length;const wp=S.wps.find(w=>w.id===p.wp);
   const t=n>1?(-0.22+0.5*i/(n-1)):0;return shade(wp.color,t);}
 
@@ -215,8 +241,14 @@ function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads up
 }
 
 /* ---------- figure ---------- */
-const R=300, TRK=20;
-const FONT='Public Sans, Helvetica, Arial, sans-serif', SERIF='Newsreader, Georgia, serif';
+const R=300, TRK=20, VB=550;
+const FONT='Public Sans, Helvetica, Arial, sans-serif';
+function splitTitle(t){ // long titles wrap onto two lines at the space nearest the middle
+  if(t.length<=10||t.indexOf(' ')<0)return [t];
+  const mid=t.length/2;let best=-1;
+  for(let i=0;i<t.length;i++)if(t[i]===' '&&(best<0||Math.abs(i-mid)<Math.abs(best-mid)))best=i;
+  return [t.slice(0,best),t.slice(best+1)];
+}
 function build(){
   const O=S.opts, T=S.themes;
   const projs=[];S.wps.forEach(wp=>S.projects.filter(p=>p.wp===wp.id).forEach(p=>projs.push(p)));
@@ -243,7 +275,7 @@ function build(){
   let b=T0;const ta=tDisp.map(x=>{const r=[b,b+x*kt];b+=x*kt+tg;return r;});
   const kts=tTot.map((x,j)=>x>0?(ta[j][1]-ta[j][0])/x:0);
 
-  let out=`<rect x="-540" y="-540" width="1080" height="1080" fill="#FFFFFF"/>`;
+  let out=`<rect x="${-VB}" y="${-VB}" width="${2*VB}" height="${2*VB}" fill="#FFFFFF"/>`;
   // ribbons: within a project, go Function→Origin (reverse) ; within a theme, last project first
   const tCur=ta.map(x=>x[0]);
   const ribs=[];
@@ -257,7 +289,7 @@ function build(){
     for(let j=2;j>=0;j--){const v=vals[i][j];if(v<=0)continue;const w=v*ks;
       const t=tPos[i+'_'+j];
       const col=O.colorBy==='wp'?projColor(p):T[j].color;
-      ribs.push(`<path class="rib" data-p="${p.id}" data-t="${j}" data-wpr="${p.wp}" data-r="${i}_${j}" d="${ribbon(R-2,s,s+w,t[0],t[1])}" fill="${col}" fill-opacity="${O.opacity}" stroke="${col}" stroke-opacity="${Math.min(1,O.opacity+0.15)}" stroke-width="0.5"/>`);
+      ribs.push(`<path class="rib" data-p="${p.id}" data-t="${j}" data-wpr="${p.wp}" data-r="${i}_${j}" d="${ribbon(R-2,s,s+w,t[0],t[1])}" fill="${col}" fill-opacity="${O.opacity}" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="0.8"/>`);
       s+=w;}
   });
   out+=`<g>${ribs.join('')}</g>`;
@@ -274,29 +306,42 @@ function build(){
   projs.forEach((p,i)=>{
     const [a0,a1]=pa[i];const col=projColor(p);const m=(a0+a1)/2;
     out+=`<path class="trk" data-p="${p.id}" d="${annulus(a0,a1,R,R+TRK)}" fill="${col}"/>`;
-    const deg=m*180/Math.PI;const left=m>Math.PI;
+    const left=m>Math.PI;
     const title=p.title.length>28?p.title.slice(0,27)+'…':p.title;
-    const txt=`<tspan font-weight="700">${esc(codeOf(p))}</tspan>${O.showTitles&&title?`<tspan dx="7" fill="#4A535A">${esc(title)}</tspan>`:''}`;
-    out+=`<text data-p="${p.id}" transform="rotate(${f(deg-90)}) translate(${R+TRK+10},0)${left?' rotate(180)':''}" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="14" fill="#1E2328">${txt}</text>`;
+    // horizontal labels; wrap only on the flanks, where neighbours are stacked vertically with room to spare
+    const lines=O.showTitles&&title?(Math.abs(Math.sin(m))>0.8?splitTitle(title):[title]):[];
+    const [lx,ly]=pt(m,R+TRK+8);
+    const code=`<tspan font-weight="700"${lines.length>1?' dy="-0.55em"':''}>${esc(codeOf(p))}</tspan>`;
+    const txt=code+(lines[0]?`<tspan dx="5" fill="#3A4249">${esc(lines[0])}</tspan>`:'')+(lines[1]?`<tspan x="${f(lx)}" dy="1.1em" fill="#3A4249">${esc(lines[1])}</tspan>`:'');
+    out+=`<text data-p="${p.id}" x="${f(lx)}" y="${f(ly)}" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="13" fill="#1E2328">${txt}</text>`;
   });
-  // WP brackets
+  // WP brackets: thin outer arc, name just inside it
+  const rb=O.showTitles?468:395;
   S.wps.forEach((wp,k)=>{
     const idx=projs.map((p,i)=>p.wp===wp.id?i:-1).filter(i=>i>=0);if(!idx.length)return;
-    const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];const rb=O.showTitles?482:395;
-    out+=`<path class="trk" data-wp="${wp.id}" d="${annulus(a0,a1,rb,rb+5)}" fill="${wp.color}"/>`;
-    const ap=arcPath(a0,a1,rb+(arcPath(a0,a1,rb).flip?22:14));
-    out+=`<path id="wpl${k}" d="${ap.d}" fill="none"/><text data-wp="${wp.id}" font-family="${SERIF}" font-size="21" font-weight="600" fill="${shade(wp.color,-0.25)}"><textPath href="#wpl${k}" startOffset="50%" text-anchor="middle">${esc(wp.name)}</textPath></text>`;
+    const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
+    out+=`<path class="trk" data-wp="${wp.id}" d="${annulus(a0,a1,rb,rb+4)}" fill="${wp.color}"/>`;
+    const ap=arcPath(a0,a1,arcPath(a0,a1,1).flip?rb-8:rb-25);
+    out+=`<path id="wpl${k}" d="${ap.d}" fill="none"/><text data-wp="${wp.id}" font-family="${FONT}" font-size="24" font-weight="500" fill="${wp.color}"><textPath href="#wpl${k}" startOffset="50%" text-anchor="middle">${esc(wp.name)}</textPath></text>`;
   });
   // theme tracks
   ta.forEach(([a0,a1],j)=>{
     out+=`<path class="trk" data-t="${j}" d="${annulus(a0,a1,R,R+TRK+6)}" fill="${T[j].color}"/>`;
-    const ap=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?44:22));
-    out+=`<path id="thl${j}" d="${ap.d}" fill="none"/><text data-t="${j}" font-family="${SERIF}" font-size="34" font-weight="600" fill="${T[j].color}"><textPath href="#thl${j}" startOffset="50%" text-anchor="middle">${esc(T[j].name)}</textPath></text>`;
-    // share label
-    const tot=tTot.reduce((x,y)=>x+y,0);
-    const ap2=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?72:58));
-    out+=`<path id="ths${j}" d="${ap2.d}" fill="none"/><text font-family="${FONT}" font-size="14" fill="#5D666E"><textPath href="#ths${j}" startOffset="50%" text-anchor="middle">${tot?Math.round(100*tTot[j]/tot):0}% of network effort</textPath></text>`;
+    const ap=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?42:16));
+    out+=`<path id="thl${j}" d="${ap.d}" fill="none"/><text data-t="${j}" font-family="${FONT}" font-size="36" font-weight="500" fill="${T[j].color}"><textPath href="#thl${j}" startOffset="50%" text-anchor="middle">${esc(T[j].name)}</textPath></text>`;
+    if(O.showShares){
+      const tot=tTot.reduce((x,y)=>x+y,0);
+      const ap2=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?66:54));
+      out+=`<path id="ths${j}" d="${ap2.d}" fill="none"/><text font-family="${FONT}" font-size="14" fill="#5D666E"><textPath href="#ths${j}" startOffset="50%" text-anchor="middle">${tot?Math.round(100*tTot[j]/tot):0}% of network effort</textPath></text>`;
+    }
   });
+  // side headings
+  const Lb=S.labels;
+  [[P0,P1,rb+22,Lb.left,'hl'],[T0,T1,O.showShares?R+TRK+92:R+TRK+74,Lb.right,'hr']].forEach(([a0,a1,r,txt,id])=>{
+    if(!txt)return;const ap=arcPath(a0,a1,r);
+    out+=`<path id="${id}" d="${ap.d}" fill="none"/><text font-family="${FONT}" font-size="46" font-weight="700" fill="${Lb.color}"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(txt)}</textPath></text>`;
+  });
+  if(!O.showLegend)return out;
   // legend
   let ly=420;
   out+=`<g font-family="${FONT}" font-size="14" fill="#1E2328">`;
@@ -357,16 +402,25 @@ function renderEditor(){
         <input type="text" value="${esc(wp.code)}" data-k="wpcode" maxlength="3" aria-label="Short code" title="Short code used for project labels">
       </div>
       ${ps.map((p,i)=>`<div class="proj" data-pid="${p.id}">
-        <span class="code" style="color:${projColor(p)}">${esc(wp.code)}${i+1}</span>
-        <input type="text" value="${esc(p.title)}" data-k="title" aria-label="Title of ${esc(wp.code)}${i+1}">
-        <button class="x" data-k="del" aria-label="Remove ${esc(wp.code)}${i+1}" title="Remove project">×</button>
+        <span class="code" style="color:${projColor(p)}">${esc(codeOf(p))}</span>
+        <input type="text" value="${esc(p.title)}" data-k="title" aria-label="Title of ${esc(codeOf(p))}">
+        <button class="x" data-k="del" aria-label="Remove ${esc(codeOf(p))}" title="Remove project">×</button>
         <div class="weights">${S.themes.map((t,j)=>`<label class="w"><span><i class="sw" style="background:${t.color}"></i>${esc(t.name)}</span><b>${p.w[j]}</b><input type="range" min="0" max="10" step="1" value="${p.w[j]}" data-k="w" data-j="${j}"></label>`).join('')}</div>
       </div>`).join('')}
       <button class="btn add" data-k="add">Add project to ${esc(wp.name)}</button>
     </section>`;}).join('');
   document.getElementById('themes').innerHTML=S.themes.map((t,j)=>`<div class="row"><input type="color" value="${t.color}" data-tc="${j}" aria-label="Colour for ${esc(t.name)}"><input type="text" value="${esc(t.name)}" data-tn="${j}" aria-label="Theme name"></div>`).join('');
-  renderLinks();syncToolbar();syncJson();
+  renderLinks();syncLabels();syncToolbar();syncJson();
 }
+const labelsEl=document.getElementById('labels');
+function syncLabels(){
+  labelsEl.querySelectorAll('[data-lb]').forEach(el=>{if(document.activeElement!==el)el.value=S.labels[el.dataset.lb];});
+  labelsEl.querySelectorAll('[data-lo]').forEach(el=>{el.checked=!!S.opts[el.dataset.lo];});
+}
+labelsEl.addEventListener('input',e=>{const t=e.target;
+  if(t.dataset.lb)S.labels[t.dataset.lb]=t.value;else if(t.dataset.lo)S.opts[t.dataset.lo]=t.checked;else return;
+  changed(false);});
+labelsEl.addEventListener('change',e=>{const k=e.target.dataset.lb;if(k==='prefix'||k==='numbering')renderEditor();});
 function projOptions(sel){
   return S.wps.map(wp=>`<optgroup label="${esc(wp.name)}">`+S.projects.filter(p=>p.wp===wp.id).map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(codeOf(p))}${p.title&&p.title!=='Project title'?' '+esc(p.title.slice(0,22)):''}</option>`).join('')+'</optgroup>').join('');
 }
@@ -428,7 +482,7 @@ document.getElementById('copyJson').addEventListener('click',async()=>{
   catch(e){jsonEl.select();jsonNote.textContent='Select all text above and copy it.';}
 });
 document.getElementById('loadJson').addEventListener('click',()=>{
-  try{const o=JSON.parse(jsonEl.value);if(!valid(o))throw 0;S=o;changed(true);jsonNote.textContent='Settings loaded.';}
+  try{const o=JSON.parse(jsonEl.value);if(!valid(o))throw 0;S=fill(o);changed(true);jsonNote.textContent='Settings loaded.';}
   catch(e){jsonNote.textContent='These settings could not be read. Paste the full text copied from this page.';}
 });
 document.getElementById('reset').addEventListener('click',()=>{if(confirm('Replace all your projects and weights with the example?')){S=example();changed(true);jsonNote.textContent='Reset to the example.';}});
@@ -436,7 +490,7 @@ document.getElementById('reset').addEventListener('click',()=>{if(confirm('Repla
 /* ---------- export ---------- */
 function svgString(){
   clearFocus();
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="-540 -540 1080 1080" width="1080" height="1080">'+build()+'</svg>';
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-VB} ${-VB} ${2*VB} ${2*VB}" width="${2*VB}" height="${2*VB}">`+build()+'</svg>';
 }
 const dlNote=document.getElementById('dlNote');
 (function(){

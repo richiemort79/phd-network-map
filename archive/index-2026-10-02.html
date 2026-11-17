@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doctoral network map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EEF0EE; --panel:#FFFFFF; --ink:#1E2328; --muted:#5D666E; --line:#D5DAD7;
+  --field:#F5F7F6; --accent:#0E6E78; --plate:#FFFFFF;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15191C; --panel:#1E2428; --ink:#E7ECEA; --muted:#9AA5A8; --line:#343D42;
+    --field:#262D32; --accent:#5FC2CB;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15191C; --panel:#1E2428; --ink:#E7ECEA; --muted:#9AA5A8; --line:#343D42;
+  --field:#262D32; --accent:#5FC2CB;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+.wrap{max-width:1500px;margin:0 auto;padding:20px clamp(12px,3vw,32px) 40px;
+  display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:24px;align-items:start}
+@media (max-width:1050px){.wrap{grid-template-columns:minmax(0,1fr)}}
+header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px}
+h1{font:600 clamp(26px,3.4vw,38px)/1.1 var(--serif);margin:0;letter-spacing:-.01em}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.figure-col{position:sticky;top:calc(12px + env(safe-area-inset-top,0px))}
+@media (max-width:1050px){.figure-col{position:static}}
+.plate{background:var(--plate);border:1px solid var(--line);border-radius:6px;padding:8px;color:#1E2328}
+.plate svg{display:block;width:100%;height:auto;max-height:calc(100vh - 150px)}
+@media (max-width:1050px){.plate svg{max-height:none}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:12px;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.seg button{border:0;background:var(--panel);color:var(--ink);padding:5px 10px;font:500 13px var(--sans);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.toolbar label{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:5px;padding:6px 12px;font:500 13px var(--sans);cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+aside{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
+aside h2{font:600 20px/1.2 var(--serif);margin:0 0 4px}
+aside .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+.wp{border-top:1px solid var(--line);padding:14px 0 6px}
+.wp-head{display:grid;grid-template-columns:28px 1fr 56px;gap:8px;align-items:center;margin-bottom:8px}
+input[type=color]{width:28px;height:28px;padding:0;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
+input[type=text],select,textarea{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:5px 7px;font:14px var(--sans)}
+.wp-head input[type=text]{font-weight:600}
+.proj{display:grid;grid-template-columns:34px 1fr 24px;gap:4px 8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+.proj .code{font-weight:700;font-size:13px}
+.proj .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0}
+.proj .x:hover{color:var(--ink)}
+.weights{grid-column:2/4;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.w{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 6px;font-size:12px;color:var(--muted)}
+.w input{grid-column:1/-1;width:100%;margin:0}
+.w b{color:var(--ink);font-variant-numeric:tabular-nums}
+.w .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
+.add{margin:8px 0 4px}
+details{border-top:1px solid var(--line);padding:12px 0 2px}
+summary{cursor:pointer;font:600 16px var(--serif)}
+.themes{display:grid;gap:8px;margin-top:10px}
+.themes .row{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center}
+.links{display:grid;gap:8px;margin-top:10px}
+.links .row{display:grid;grid-template-columns:1fr 1fr 64px 24px;gap:6px;align-items:center}
+.links .row input[type=range]{width:100%}
+textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;margin-top:8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.note{font-size:13px;color:var(--muted);min-height:1.4em;margin-top:6px}
+
+#tip{position:fixed;pointer-events:none;background:#1E2328;color:#fff;font:13px/1.4 var(--sans);padding:6px 9px;border-radius:4px;opacity:0;transition:opacity .12s;z-index:9;max-width:260px}
+#fig .rib,#fig .link{transition:opacity .15s}
+#fig.focus .rib{opacity:.06!important}
+#fig.focus .rib.on{opacity:.92!important}
+#fig.focus .link{opacity:.1}
+#fig.focus .link.on{opacity:1}
+#fig.focus .trk{opacity:.35}
+#fig.focus .trk.on{opacity:1}
+#fig [data-p],#fig [data-t],#fig [data-wp]{cursor:pointer}
+@media (prefers-reduced-motion:reduce){#fig .rib,#fig .link,#tip{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="h1">Doctoral network map</h1>
+      <p>Each ribbon joins a PhD project to a theme; its width is the weight you set. Hover any project, theme or work package to trace its connections.</p>
+    </div>
+  </header>
+
+  <div class="figure-col">
+    <div class="plate"><svg id="fig" viewBox="-540 -540 1080 1080" role="img" aria-label="Circular map of PhD projects, work packages and themes"></svg></div>
+    <div class="toolbar">
+      <span class="seg" role="group" aria-label="Colour ribbons by">
+        <button data-color="wp">Colour by work package</button><button data-color="theme">Colour by theme</button>
+      </span>
+      <span class="seg" role="group" aria-label="Project arc size">
+        <button data-size="equal" title="Every PhD gets the same arc; weights become shares">Equal PhDs</button><button data-size="total" title="Arc length grows with total weight">Size by total weight</button>
+      </span>
+      <label><input type="checkbox" id="optLinks"> Project links</label>
+      <label><input type="checkbox" id="optTitles"> Titles</label>
+      <label>Ribbon opacity <input type="range" id="optOpacity" min="0.3" max="1" step="0.05"></label>
+      <span class="actions" style="margin:0">
+        <button class="btn" id="dlSvg" hidden>Download SVG</button>
+        <button class="btn" id="dlPng" hidden>Download PNG</button>
+      </span>
+    </div>
+    <div class="note" id="dlNote"></div>
+  </div>
+
+  <aside>
+    <h2>Projects and weights</h2>
+    <p class="hint">Weights run 0–10. In “Equal PhDs” mode they are read as each student’s share of effort across the three themes.</p>
+    <div id="wps"></div>
+
+    <details>
+      <summary>Themes</summary>
+      <div class="themes" id="themes"></div>
+    </details>
+
+    <details>
+      <summary>Links between projects</summary>
+      <p class="hint" style="margin-top:8px">Shared methods, co-supervision or data exchange. Drawn as dark lines across the circle.</p>
+      <div class="links" id="links"></div>
+      <button class="btn add" id="addLink">Add link</button>
+    </details>
+
+    <details>
+      <summary>Save, share or reset</summary>
+      <p class="hint" style="margin-top:8px">Your edits are kept in this browser. To move them elsewhere, copy the settings below and paste them into another copy.</p>
+      <textarea id="json" spellcheck="false" aria-label="Settings as JSON"></textarea>
+      <div class="actions">
+        <button class="btn" id="copyJson">Copy settings</button>
+        <button class="btn primary" id="loadJson">Load pasted settings</button>
+        <button class="btn" id="reset">Reset to example</button>
+      </div>
+      <div class="note" id="jsonNote"></div>
+    </details>
+  </aside>
+</div>
+<div id="tip"></div>
+
+<script>
+(function(){
+const KEY='phd-network-map-v1';
+let uid=0; const nid=p=>p+(Date.now().toString(36))+(uid++);
+
+function example(){
+  const wps=[
+    {id:'wpM',name:'Molecular',code:'M',color:'#1F7A8C'},
+    {id:'wpS',name:'Subcellular',code:'S',color:'#8E3B8A'},
+    {id:'wpT',name:'Tissue / macroscale',code:'T',color:'#B7791F'}
+  ];
+  const W={wpM:[[8,4,2],[6,6,3],[2,5,8],[3,3,9],[7,2,4]],
+           wpS:[[5,7,3],[2,4,8],[6,5,5],[1,3,9],[4,8,2]],
+           wpT:[[2,6,7],[3,8,4],[1,2,9],[6,6,6],[2,7,5]]};
+  const projects=[];
+  wps.forEach(wp=>W[wp.id].forEach((w,i)=>projects.push({id:wp.id+'p'+i,wp:wp.id,title:'Project title',w:w.slice()})));
+  const L=[['wpMp0','wpSp0',6],['wpMp2','wpSp1',4],['wpSp2','wpTp3',7],['wpMp4','wpTp1',3],['wpSp3','wpTp2',5]];
+  return {
+    themes:[{name:'Origin',color:'#2B4C7E'},{name:'Evolution',color:'#4E8B3A'},{name:'Function',color:'#C0392B'}],
+    wps, projects,
+    links:L.map((l,i)=>({id:'l'+i,a:l[0],b:l[1],s:l[2]})),
+    opts:{colorBy:'wp',sizing:'equal',showLinks:true,showTitles:true,opacity:0.72}
+  };
+}
+function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(valid(o))return o;}}catch(e){}return example();}
+function valid(o){return o&&Array.isArray(o.themes)&&o.themes.length===3&&Array.isArray(o.wps)&&Array.isArray(o.projects)&&Array.isArray(o.links)&&o.opts;}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rad=d=>d*Math.PI/180;
+const pt=(a,r)=>[r*Math.sin(a),-r*Math.cos(a)];
+const f=n=>n.toFixed(2);
+
+function shade(hex,t){ // t in [-1,1]: negative darker, positive lighter
+  const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;
+  const m=t<0?0:255,k=Math.abs(t);
+  r=Math.round(r+(m-r)*k);g=Math.round(g+(m-g)*k);b=Math.round(b+(m-b)*k);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function codeOf(p){const wp=S.wps.find(w=>w.id===p.wp);const list=S.projects.filter(q=>q.wp===p.wp);return (wp?wp.code:'?')+(list.indexOf(p)+1);}
+function projColor(p){const list=S.projects.filter(q=>q.wp===p.wp);const i=list.indexOf(p),n=list.length;const wp=S.wps.find(w=>w.id===p.wp);
+  const t=n>1?(-0.22+0.5*i/(n-1)):0;return shade(wp.color,t);}
+
+function annulus(a0,a1,r0,r1){
+  const L=(a1-a0)>Math.PI?1:0;const p0=pt(a0,r1),p1=pt(a1,r1),p2=pt(a1,r0),p3=pt(a0,r0);
+  return `M${f(p0[0])},${f(p0[1])}A${r1},${r1} 0 ${L} 1 ${f(p1[0])},${f(p1[1])}L${f(p2[0])},${f(p2[1])}A${r0},${r0} 0 ${L} 0 ${f(p3[0])},${f(p3[1])}Z`;
+}
+function ribbon(r,s0,s1,t0,t1){
+  const a=pt(s0,r),b=pt(s1,r),c=pt(t0,r),d=pt(t1,r);
+  const Ls=(s1-s0)>Math.PI?1:0,Lt=(t1-t0)>Math.PI?1:0;
+  return `M${f(a[0])},${f(a[1])}A${r},${r} 0 ${Ls} 1 ${f(b[0])},${f(b[1])}Q0,0 ${f(c[0])},${f(c[1])}A${r},${r} 0 ${Lt} 1 ${f(d[0])},${f(d[1])}Q0,0 ${f(a[0])},${f(a[1])}Z`;
+}
+function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads upright
+  const mid=(a0+a1)/2;const flip=mid>Math.PI/2&&mid<Math.PI*1.5;
+  const L=(a1-a0)>Math.PI?1:0;
+  if(!flip){const p=pt(a0,r),q=pt(a1,r);return {d:`M${f(p[0])},${f(p[1])}A${r},${r} 0 ${L} 1 ${f(q[0])},${f(q[1])}`,flip};}
+  const p=pt(a1,r),q=pt(a0,r);return {d:`M${f(p[0])},${f(p[1])}A${r},${r} 0 ${L} 0 ${f(q[0])},${f(q[1])}`,flip};
+}
+
+/* ---------- figure ---------- */
+const R=300, TRK=20;
+const FONT='Public Sans, Helvetica, Arial, sans-serif', SERIF='Newsreader, Georgia, serif';
+function build(){
+  const O=S.opts, T=S.themes;
+  const projs=[];S.wps.forEach(wp=>S.projects.filter(p=>p.wp===wp.id).forEach(p=>projs.push(p)));
+  // values per project per theme
+  const vals=projs.map(p=>{const s=p.w.reduce((a,b)=>a+b,0);
+    return O.sizing==='equal'?p.w.map(x=>s>0?x/s:0):p.w.slice();});
+  const sizes=projs.map((p,i)=>{const s=vals[i].reduce((a,b)=>a+b,0);return s;});
+  const mean=sizes.length?sizes.reduce((a,b)=>a+b,0)/sizes.length:1;
+  const disp=sizes.map(s=>O.sizing==='equal'?1:Math.max(s,0.15*(mean||1)));
+
+  // project side: 185°→355°
+  const P0=rad(185),P1=rad(355),pg=rad(0.9),wg=rad(4.5);
+  const nW=S.wps.filter(w=>projs.some(p=>p.wp===w.id)).length;
+  let gaps=0;projs.forEach((p,i)=>{if(i>0)gaps+=(p.wp!==projs[i-1].wp)?wg:pg;});
+  const kp=projs.length?(P1-P0-gaps)/disp.reduce((a,b)=>a+b,0):0;
+  let a=P0;const pa=[];
+  projs.forEach((p,i)=>{if(i>0)a+=(p.wp!==projs[i-1].wp)?wg:pg;pa.push([a,a+disp[i]*kp]);a+=disp[i]*kp;});
+
+  // theme side: 20°→160°
+  const T0=rad(20),T1=rad(160),tg=rad(5);
+  const tTot=[0,1,2].map(j=>vals.reduce((s,v)=>s+v[j],0));
+  const tDisp=tTot.map(x=>Math.max(x,0.05*(tTot.reduce((a,b)=>a+b,0)||1)));
+  const kt=(T1-T0-2*tg)/tDisp.reduce((a,b)=>a+b,0);
+  let b=T0;const ta=tDisp.map(x=>{const r=[b,b+x*kt];b+=x*kt+tg;return r;});
+  const kts=tTot.map((x,j)=>x>0?(ta[j][1]-ta[j][0])/x:0);
+
+  let out=`<rect x="-540" y="-540" width="1080" height="1080" fill="#FFFFFF"/>`;
+  // ribbons: within a project, go Function→Origin (reverse) ; within a theme, last project first
+  const tCur=ta.map(x=>x[0]);
+  const ribs=[];
+  // theme positions: iterate projects in reverse
+  const tPos={};
+  for(let i=projs.length-1;i>=0;i--){for(let j=0;j<3;j++){const v=vals[i][j];if(v<=0)continue;const w=v*kts[j];tPos[i+'_'+j]=[tCur[j],tCur[j]+w];tCur[j]+=w;}}
+  projs.forEach((p,i)=>{
+    const sz=sizes[i]; const span=pa[i][1]-pa[i][0];
+    const ks=sz>0?(O.sizing==='equal'?span:span*Math.min(1,sz/disp[i]))/sz:0;
+    let s=pa[i][0];
+    for(let j=2;j>=0;j--){const v=vals[i][j];if(v<=0)continue;const w=v*ks;
+      const t=tPos[i+'_'+j];
+      const col=O.colorBy==='wp'?projColor(p):T[j].color;
+      ribs.push(`<path class="rib" data-p="${p.id}" data-t="${j}" data-wpr="${p.wp}" data-r="${i}_${j}" d="${ribbon(R-2,s,s+w,t[0],t[1])}" fill="${col}" fill-opacity="${O.opacity}" stroke="${col}" stroke-opacity="${Math.min(1,O.opacity+0.15)}" stroke-width="0.5"/>`);
+      s+=w;}
+  });
+  out+=`<g>${ribs.join('')}</g>`;
+
+  // links
+  if(O.showLinks){
+    const mid={};projs.forEach((p,i)=>mid[p.id]=(pa[i][0]+pa[i][1])/2);
+    out+='<g fill="none">'+S.links.filter(l=>mid[l.a]!=null&&mid[l.b]!=null&&l.a!==l.b).map(l=>{
+      const p=pt(mid[l.a],R-4),q=pt(mid[l.b],R-4),m=(mid[l.a]+mid[l.b])/2,c=pt(m,R*0.28);
+      return `<path class="link" data-l="${l.id}" data-pa="${l.a}" data-pb="${l.b}" d="M${f(p[0])},${f(p[1])}Q${f(c[0])},${f(c[1])} ${f(q[0])},${f(q[1])}" stroke="#1E2328" stroke-width="${f(1+l.s*0.45)}" stroke-linecap="round" stroke-dasharray="${l.s<4?'4 5':'none'}" opacity="0.85"/>`;}).join('')+'</g>';
+  }
+
+  // project tracks + labels
+  projs.forEach((p,i)=>{
+    const [a0,a1]=pa[i];const col=projColor(p);const m=(a0+a1)/2;
+    out+=`<path class="trk" data-p="${p.id}" d="${annulus(a0,a1,R,R+TRK)}" fill="${col}"/>`;
+    const deg=m*180/Math.PI;const left=m>Math.PI;
+    const title=p.title.length>28?p.title.slice(0,27)+'…':p.title;
+    const txt=`<tspan font-weight="700">${esc(codeOf(p))}</tspan>${O.showTitles&&title?`<tspan dx="7" fill="#4A535A">${esc(title)}</tspan>`:''}`;
+    out+=`<text data-p="${p.id}" transform="rotate(${f(deg-90)}) translate(${R+TRK+10},0)${left?' rotate(180)':''}" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="14" fill="#1E2328">${txt}</text>`;
+  });
+  // WP brackets
+  S.wps.forEach((wp,k)=>{
+    const idx=projs.map((p,i)=>p.wp===wp.id?i:-1).filter(i=>i>=0);if(!idx.length)return;
+    const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];const rb=O.showTitles?482:395;
+    out+=`<path class="trk" data-wp="${wp.id}" d="${annulus(a0,a1,rb,rb+5)}" fill="${wp.color}"/>`;
+    const ap=arcPath(a0,a1,rb+(arcPath(a0,a1,rb).flip?22:14));
+    out+=`<path id="wpl${k}" d="${ap.d}" fill="none"/><text data-wp="${wp.id}" font-family="${SERIF}" font-size="21" font-weight="600" fill="${shade(wp.color,-0.25)}"><textPath href="#wpl${k}" startOffset="50%" text-anchor="middle">${esc(wp.name)}</textPath></text>`;
+  });
+  // theme tracks
+  ta.forEach(([a0,a1],j)=>{
+    out+=`<path class="trk" data-t="${j}" d="${annulus(a0,a1,R,R+TRK+6)}" fill="${T[j].color}"/>`;
+    const ap=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?44:22));
+    out+=`<path id="thl${j}" d="${ap.d}" fill="none"/><text data-t="${j}" font-family="${SERIF}" font-size="34" font-weight="600" fill="${T[j].color}"><textPath href="#thl${j}" startOffset="50%" text-anchor="middle">${esc(T[j].name)}</textPath></text>`;
+    // share label
+    const tot=tTot.reduce((x,y)=>x+y,0);
+    const ap2=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?72:58));
+    out+=`<path id="ths${j}" d="${ap2.d}" fill="none"/><text font-family="${FONT}" font-size="14" fill="#5D666E"><textPath href="#ths${j}" startOffset="50%" text-anchor="middle">${tot?Math.round(100*tTot[j]/tot):0}% of network effort</textPath></text>`;
+  });
+  // legend
+  let ly=420;
+  out+=`<g font-family="${FONT}" font-size="14" fill="#1E2328">`;
+  out+=`<text x="-520" y="${ly}" font-weight="700">${O.colorBy==='wp'?'Work packages':'Themes'}</text>`;
+  (O.colorBy==='wp'?S.wps.map(w=>[w.color,w.name]):T.map(t=>[t.color,t.name])).forEach((it,i)=>{
+    const y=ly+22+i*21;out+=`<rect x="-520" y="${y-11}" width="14" height="14" rx="2" fill="${it[0]}"/><text x="-499" y="${y}">${esc(it[1])}</text>`;});
+  const ny=ly+22+3*21+6;
+  out+=`<text x="-520" y="${ny}" fill="#5D666E" font-size="12.5">Ribbon width: project weight on theme${O.sizing==='equal'?' (share of PhD)':''}</text>`;
+  if(O.showLinks&&S.links.length)out+=`<line x1="-520" x2="-496" y1="${ny+17}" y2="${ny+17}" stroke="#1E2328" stroke-width="3"/><text x="-489" y="${ny+21}" fill="#5D666E" font-size="12.5">Link between projects</text>`;
+  out+='</g>';
+  return out;
+}
+const fig=document.getElementById('fig');
+function draw(){fig.innerHTML=build();}
+
+/* ---------- hover ---------- */
+const tip=document.getElementById('tip');
+function clearFocus(){fig.classList.remove('focus');fig.querySelectorAll('.on').forEach(e=>e.classList.remove('on'));tip.style.opacity=0;}
+fig.addEventListener('mouseover',e=>{
+  const el=e.target.closest('[data-p],[data-t],[data-wp],[data-l]');if(!el){clearFocus();return;}
+  clearFocus();fig.classList.add('focus');
+  const on=sel=>fig.querySelectorAll(sel).forEach(x=>x.classList.add('on'));
+  let html='';
+  if(el.classList.contains('rib')){
+    const p=S.projects.find(q=>q.id===el.dataset.p),j=+el.dataset.t,s=p.w.reduce((a,b)=>a+b,0);
+    el.classList.add('on');on(`.trk[data-p="${p.id}"]`);on(`.trk[data-t="${j}"]`);
+    html=`<b>${esc(codeOf(p))}</b> ${esc(p.title)}<br>${esc(S.themes[j].name)}: weight ${p.w[j]} (${s?Math.round(100*p.w[j]/s):0}% of this PhD)`;
+  }else if(el.dataset.l){
+    const l=S.links.find(x=>x.id===el.dataset.l);el.classList.add('on');on(`.trk[data-p="${l.a}"],.trk[data-p="${l.b}"]`);
+    const A=S.projects.find(q=>q.id===l.a),B=S.projects.find(q=>q.id===l.b);
+    html=`Link <b>${esc(codeOf(A))}</b> – <b>${esc(codeOf(B))}</b>, strength ${l.s}`;
+  }else if(el.dataset.p){
+    const id=el.dataset.p,p=S.projects.find(q=>q.id===id);
+    on(`[data-p="${id}"]`);on(`.link[data-pa="${id}"],.link[data-pb="${id}"]`);
+    S.links.forEach(l=>{if(l.a===id)on(`.trk[data-p="${l.b}"]`);if(l.b===id)on(`.trk[data-p="${l.a}"]`);});
+    html=`<b>${esc(codeOf(p))}</b> ${esc(p.title)}<br>`+S.themes.map((t,j)=>`${esc(t.name)} ${p.w[j]}`).join(', ');
+  }else if(el.dataset.t!=null){
+    const j=el.dataset.t;on(`[data-t="${j}"]`);fig.querySelectorAll(`.rib[data-t="${j}"]`).forEach(r=>on(`.trk[data-p="${r.dataset.p}"]`));
+    html=`<b>${esc(S.themes[j].name)}</b>`;
+  }else if(el.dataset.wp){
+    const id=el.dataset.wp;on(`[data-wp="${id}"]`);on(`.rib[data-wpr="${id}"]`);S.projects.filter(p=>p.wp===id).forEach(p=>on(`.trk[data-p="${p.id}"]`));
+    html=`<b>${esc(S.wps.find(w=>w.id===id).name)}</b>`;
+  }
+  if(html){tip.innerHTML=html;tip.style.opacity=1;}
+});
+fig.addEventListener('mousemove',e=>{const w=tip.offsetWidth;tip.style.left=Math.min(e.clientX+14,innerWidth-w-8)+'px';tip.style.top=(e.clientY+14)+'px';});
+fig.addEventListener('mouseleave',clearFocus);
+
+/* ---------- editor ---------- */
+const wpsEl=document.getElementById('wps');
+function renderEditor(){
+  wpsEl.innerHTML=S.wps.map(wp=>{
+    const ps=S.projects.filter(p=>p.wp===wp.id);
+    return `<section class="wp" data-wpid="${wp.id}">
+      <div class="wp-head">
+        <input type="color" value="${wp.color}" data-k="wpcolor" aria-label="Colour for ${esc(wp.name)}">
+        <input type="text" value="${esc(wp.name)}" data-k="wpname" aria-label="Work package name">
+        <input type="text" value="${esc(wp.code)}" data-k="wpcode" maxlength="3" aria-label="Short code" title="Short code used for project labels">
+      </div>
+      ${ps.map((p,i)=>`<div class="proj" data-pid="${p.id}">
+        <span class="code" style="color:${projColor(p)}">${esc(wp.code)}${i+1}</span>
+        <input type="text" value="${esc(p.title)}" data-k="title" aria-label="Title of ${esc(wp.code)}${i+1}">
+        <button class="x" data-k="del" aria-label="Remove ${esc(wp.code)}${i+1}" title="Remove project">×</button>
+        <div class="weights">${S.themes.map((t,j)=>`<label class="w"><span><i class="sw" style="background:${t.color}"></i>${esc(t.name)}</span><b>${p.w[j]}</b><input type="range" min="0" max="10" step="1" value="${p.w[j]}" data-k="w" data-j="${j}"></label>`).join('')}</div>
+      </div>`).join('')}
+      <button class="btn add" data-k="add">Add project to ${esc(wp.name)}</button>
+    </section>`;}).join('');
+  document.getElementById('themes').innerHTML=S.themes.map((t,j)=>`<div class="row"><input type="color" value="${t.color}" data-tc="${j}" aria-label="Colour for ${esc(t.name)}"><input type="text" value="${esc(t.name)}" data-tn="${j}" aria-label="Theme name"></div>`).join('');
+  renderLinks();syncToolbar();syncJson();
+}
+function projOptions(sel){
+  return S.wps.map(wp=>`<optgroup label="${esc(wp.name)}">`+S.projects.filter(p=>p.wp===wp.id).map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(codeOf(p))}${p.title&&p.title!=='Project title'?' '+esc(p.title.slice(0,22)):''}</option>`).join('')+'</optgroup>').join('');
+}
+function renderLinks(){
+  document.getElementById('links').innerHTML=S.links.length?S.links.map(l=>`<div class="row" data-lid="${l.id}">
+    <select data-k="a" aria-label="From project">${projOptions(l.a)}</select>
+    <select data-k="b" aria-label="To project">${projOptions(l.b)}</select>
+    <input type="range" min="1" max="10" value="${l.s}" data-k="s" aria-label="Link strength" title="Strength ${l.s}">
+    <button class="x btn" style="padding:2px 6px" data-k="dl" aria-label="Remove link">×</button></div>`).join(''):'<p class="hint" style="margin:0">No links yet. Add one to show a shared method or co-supervision.</p>';
+}
+function changed(redrawEditor){save();draw();if(redrawEditor)renderEditor();else syncJson();}
+
+wpsEl.addEventListener('input',e=>{
+  const t=e.target,k=t.dataset.k;const sec=t.closest('.wp');if(!sec)return;
+  const wp=S.wps.find(w=>w.id===sec.dataset.wpid);
+  if(k==='wpname')wp.name=t.value;
+  else if(k==='wpcode')wp.code=t.value.trim()||'?';
+  else if(k==='wpcolor')wp.color=t.value;
+  else{const row=t.closest('.proj');const p=S.projects.find(q=>q.id===row.dataset.pid);
+    if(k==='title')p.title=t.value;
+    if(k==='w'){p.w[+t.dataset.j]=+t.value;t.previousElementSibling.textContent=t.value;}}
+  changed(false);
+});
+wpsEl.addEventListener('change',e=>{const k=e.target.dataset.k;if(k==='wpcode'||k==='wpcolor'||k==='wpname')renderEditor();});
+wpsEl.addEventListener('click',e=>{
+  const t=e.target.closest('[data-k]');if(!t)return;const k=t.dataset.k;
+  if(k==='add'){const wpid=t.closest('.wp').dataset.wpid;S.projects.push({id:nid('p'),wp:wpid,title:'Project title',w:[5,5,5]});changed(true);}
+  if(k==='del'){const id=t.closest('.proj').dataset.pid;S.projects=S.projects.filter(p=>p.id!==id);S.links=S.links.filter(l=>l.a!==id&&l.b!==id);changed(true);}
+});
+document.getElementById('themes').addEventListener('input',e=>{
+  const t=e.target;if(t.dataset.tn!=null)S.themes[+t.dataset.tn].name=t.value;if(t.dataset.tc!=null)S.themes[+t.dataset.tc].color=t.value;changed(false);});
+document.getElementById('themes').addEventListener('change',()=>renderEditor());
+const linksEl=document.getElementById('links');
+linksEl.addEventListener('input',e=>{const t=e.target,row=t.closest('[data-lid]');if(!row)return;const l=S.links.find(x=>x.id===row.dataset.lid);
+  if(t.dataset.k==='a')l.a=t.value;if(t.dataset.k==='b')l.b=t.value;if(t.dataset.k==='s'){l.s=+t.value;t.title='Strength '+t.value;}changed(false);});
+linksEl.addEventListener('click',e=>{const t=e.target.closest('[data-k="dl"]');if(!t)return;const id=t.closest('[data-lid]').dataset.lid;S.links=S.links.filter(l=>l.id!==id);changed(true);});
+document.getElementById('addLink').addEventListener('click',()=>{if(S.projects.length<2)return;S.links.push({id:nid('l'),a:S.projects[0].id,b:S.projects[S.projects.length-1].id,s:5});S.opts.showLinks=true;changed(true);});
+
+/* ---------- toolbar ---------- */
+function syncToolbar(){
+  document.querySelectorAll('[data-color]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===S.opts.colorBy));
+  document.querySelectorAll('[data-size]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.size===S.opts.sizing));
+  document.getElementById('optLinks').checked=S.opts.showLinks;
+  document.getElementById('optTitles').checked=S.opts.showTitles;
+  document.getElementById('optOpacity').value=S.opts.opacity;
+}
+document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>{S.opts.colorBy=b.dataset.color;syncToolbar();changed(false);}));
+document.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{S.opts.sizing=b.dataset.size;syncToolbar();changed(false);}));
+document.getElementById('optLinks').addEventListener('change',e=>{S.opts.showLinks=e.target.checked;changed(false);});
+document.getElementById('optTitles').addEventListener('change',e=>{S.opts.showTitles=e.target.checked;changed(false);});
+document.getElementById('optOpacity').addEventListener('input',e=>{S.opts.opacity=+e.target.value;changed(false);});
+
+/* ---------- JSON ---------- */
+const jsonEl=document.getElementById('json'),jsonNote=document.getElementById('jsonNote');
+function syncJson(){if(document.activeElement!==jsonEl)jsonEl.value=JSON.stringify(S,null,1);}
+document.getElementById('copyJson').addEventListener('click',async()=>{
+  jsonEl.value=JSON.stringify(S,null,1);
+  try{await navigator.clipboard.writeText(jsonEl.value);jsonNote.textContent='Settings copied.';}
+  catch(e){jsonEl.select();jsonNote.textContent='Select all text above and copy it.';}
+});
+document.getElementById('loadJson').addEventListener('click',()=>{
+  try{const o=JSON.parse(jsonEl.value);if(!valid(o))throw 0;S=o;changed(true);jsonNote.textContent='Settings loaded.';}
+  catch(e){jsonNote.textContent='These settings could not be read. Paste the full text copied from this page.';}
+});
+document.getElementById('reset').addEventListener('click',()=>{if(confirm('Replace all your projects and weights with the example?')){S=example();changed(true);jsonNote.textContent='Reset to the example.';}});
+
+/* ---------- export ---------- */
+function svgString(){
+  clearFocus();
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="-540 -540 1080 1080" width="1080" height="1080">'+build()+'</svg>';
+}
+const dlNote=document.getElementById('dlNote');
+(function(){
+  const bS=document.getElementById('dlSvg'),bP=document.getElementById('dlPng');bS.hidden=bP.hidden=false;
+  const save=(name,blob)=>{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);};
+  bS.addEventListener('click',()=>save('phd-network-map.svg',new Blob([svgString()],{type:'image/svg+xml'})));
+  bP.addEventListener('click',()=>{
+    const img=new Image();
+    img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=3240;c.getContext('2d').drawImage(img,0,0,3240,3240);c.toBlob(b=>save('phd-network-map.png',b),'image/png');};
+    img.onerror=()=>{dlNote.textContent='The PNG could not be drawn. Try the SVG download.';};
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgString());
+  });
+})();
+
+draw();renderEditor();
+})();
+</script>
+</body>
+</html>
