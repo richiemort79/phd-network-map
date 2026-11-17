@@ -6,7 +6,7 @@
 <title>Doctoral network map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=Varela+Round&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   box-sizing:border-box;
@@ -149,6 +149,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;ma
         <label>Heading for theme side <input type="text" data-lb="right"></label>
         <label class="chk"><input type="color" data-lb="color" aria-label="Heading colour"> Heading colour</label>
         <label class="chk"><input type="checkbox" data-lo="showLegend"> Show legend</label>
+        <label>Theme arc distance <input type="range" data-lo="themeGap" min="0" max="80" step="5"></label>
         <label class="chk"><input type="checkbox" data-lo="showShares"> Show each theme’s % of effort</label>
       </div>
     </details>
@@ -180,7 +181,7 @@ textarea{min-height:110px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;ma
 const KEY='phd-network-map-v2';
 let uid=0; const nid=p=>p+(Date.now().toString(36))+(uid++);
 
-const DEF_OPTS={colorBy:'wp',sizing:'equal',showLinks:false,showTitles:true,opacity:0.72,showLegend:false,showShares:false};
+const DEF_OPTS={colorBy:'wp',sizing:'equal',showLinks:false,showTitles:false,opacity:0.72,showLegend:false,showShares:false,themeGap:40};
 const DEF_LABELS={prefix:'DC',numbering:'global',left:'Scale of study',right:'Research Theme',color:'#5B4A9B'};
 function example(){
   const wps=[
@@ -220,6 +221,7 @@ function shade(hex,t){ // t in [-1,1]: negative darker, positive lighter
   return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
 }
 function ordered(){const o=[];S.wps.forEach(wp=>S.projects.filter(p=>p.wp===wp.id).forEach(p=>o.push(p)));return o;}
+function lum(hex){const n=parseInt(hex.slice(1),16);const c=[n>>16,n>>8&255,n&255].map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];}
 function codeOf(p){if(S.labels.numbering==='global')return (S.labels.prefix||'')+(ordered().indexOf(p)+1);const wp=S.wps.find(w=>w.id===p.wp);const list=S.projects.filter(q=>q.wp===p.wp);return (wp?wp.code:'?')+(list.indexOf(p)+1);}
 function projColor(p){const list=S.projects.filter(q=>q.wp===p.wp);const i=list.indexOf(p),n=list.length;const wp=S.wps.find(w=>w.id===p.wp);
   const t=n>1?(-0.22+0.5*i/(n-1)):0;return shade(wp.color,t);}
@@ -228,10 +230,10 @@ function annulus(a0,a1,r0,r1){
   const L=(a1-a0)>Math.PI?1:0;const p0=pt(a0,r1),p1=pt(a1,r1),p2=pt(a1,r0),p3=pt(a0,r0);
   return `M${f(p0[0])},${f(p0[1])}A${r1},${r1} 0 ${L} 1 ${f(p1[0])},${f(p1[1])}L${f(p2[0])},${f(p2[1])}A${r0},${r0} 0 ${L} 0 ${f(p3[0])},${f(p3[1])}Z`;
 }
-function ribbon(r,s0,s1,t0,t1){
-  const a=pt(s0,r),b=pt(s1,r),c=pt(t0,r),d=pt(t1,r);
+function ribbon(r,rt,s0,s1,t0,t1){ // r: project-side radius, rt: theme-side radius
+  const a=pt(s0,r),b=pt(s1,r),c=pt(t0,rt),d=pt(t1,rt);
   const Ls=(s1-s0)>Math.PI?1:0,Lt=(t1-t0)>Math.PI?1:0;
-  return `M${f(a[0])},${f(a[1])}A${r},${r} 0 ${Ls} 1 ${f(b[0])},${f(b[1])}Q0,0 ${f(c[0])},${f(c[1])}A${r},${r} 0 ${Lt} 1 ${f(d[0])},${f(d[1])}Q0,0 ${f(a[0])},${f(a[1])}Z`;
+  return `M${f(a[0])},${f(a[1])}A${r},${r} 0 ${Ls} 1 ${f(b[0])},${f(b[1])}Q0,0 ${f(c[0])},${f(c[1])}A${rt},${rt} 0 ${Lt} 1 ${f(d[0])},${f(d[1])}Q0,0 ${f(a[0])},${f(a[1])}Z`;
 }
 function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads upright
   const mid=(a0+a1)/2;const flip=mid>Math.PI/2&&mid<Math.PI*1.5;
@@ -242,7 +244,7 @@ function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads up
 
 /* ---------- figure ---------- */
 const R=300, TRK=20, VB=550;
-const FONT="'Arial Rounded MT Bold','Arial Rounded MT','Varela Round',Arial,sans-serif";
+const FONT="'Arial Rounded MT Bold','Arial Rounded MT','M PLUS Rounded 1c',Arial,sans-serif";
 function splitTitle(t){ // long titles wrap onto two lines at the space nearest the middle
   if(t.length<=10||t.indexOf(' ')<0)return [t];
   const mid=t.length/2;let best=-1;
@@ -250,7 +252,7 @@ function splitTitle(t){ // long titles wrap onto two lines at the space nearest 
   return [t.slice(0,best),t.slice(best+1)];
 }
 function build(){
-  const O=S.opts, T=S.themes;
+  const O=S.opts, T=S.themes, RT=R+Math.max(0,Math.min(80,+O.themeGap||0));
   const projs=[];S.wps.forEach(wp=>S.projects.filter(p=>p.wp===wp.id).forEach(p=>projs.push(p)));
   // values per project per theme
   const vals=projs.map(p=>{const s=p.w.reduce((a,b)=>a+b,0);
@@ -289,7 +291,7 @@ function build(){
     for(let j=2;j>=0;j--){const v=vals[i][j];if(v<=0)continue;const w=v*ks;
       const t=tPos[i+'_'+j];
       const col=O.colorBy==='wp'?projColor(p):T[j].color;
-      ribs.push(`<path class="rib" data-p="${p.id}" data-t="${j}" data-wpr="${p.wp}" data-r="${i}_${j}" d="${ribbon(R-2,s,s+w,t[0],t[1])}" fill="${col}" fill-opacity="${O.opacity}" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="0.8"/>`);
+      ribs.push(`<path class="rib" data-p="${p.id}" data-t="${j}" data-wpr="${p.wp}" data-r="${i}_${j}" d="${ribbon(R-2,RT-2,s,s+w,t[0],t[1])}" fill="${col}" fill-opacity="${O.opacity}" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="0.8"/>`);
       s+=w;}
   });
   out+=`<g>${ribs.join('')}</g>`;
@@ -303,9 +305,16 @@ function build(){
   }
 
   // project tracks + labels
+  // without titles, codes sit on a thicker track and follow the curve
+  const PT=O.showTitles?TRK:28;
   projs.forEach((p,i)=>{
     const [a0,a1]=pa[i];const col=projColor(p);const m=(a0+a1)/2;
-    out+=`<path class="trk" data-p="${p.id}" d="${annulus(a0,a1,R,R+TRK)}" fill="${col}"/>`;
+    out+=`<path class="trk" data-p="${p.id}" d="${annulus(a0,a1,R,R+PT)}" fill="${col}"/>`;
+    if(!O.showTitles){
+      const fl=arcPath(a0,a1,1).flip,ap=arcPath(a0,a1,R+PT/2+(fl?4.5:-4.5));
+      out+=`<path id="pcl${i}" d="${ap.d}" fill="none"/><text data-p="${p.id}" font-family="${FONT}" font-size="13" font-weight="700" fill="${lum(col)>0.21?'#1E2328':'#FFFFFF'}"><textPath href="#pcl${i}" startOffset="50%" text-anchor="middle">${esc(codeOf(p))}</textPath></text>`;
+      return;
+    }
     const left=m>Math.PI;
     const title=p.title.length>28?p.title.slice(0,27)+'…':p.title;
     // horizontal labels; wrap only on the flanks, where neighbours are stacked vertically with room to spare
@@ -316,7 +325,7 @@ function build(){
     out+=`<text data-p="${p.id}" x="${f(lx)}" y="${f(ly)}" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="13" fill="#1E2328">${txt}</text>`;
   });
   // WP brackets: thin outer arc, name just inside it
-  const rb=O.showTitles?468:395;
+  const rb=O.showTitles?468:R+PT+42;
   S.wps.forEach((wp,k)=>{
     const idx=projs.map((p,i)=>p.wp===wp.id?i:-1).filter(i=>i>=0);if(!idx.length)return;
     const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
@@ -326,18 +335,18 @@ function build(){
   });
   // theme tracks
   ta.forEach(([a0,a1],j)=>{
-    out+=`<path class="trk" data-t="${j}" d="${annulus(a0,a1,R,R+TRK+6)}" fill="${T[j].color}"/>`;
-    const ap=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?42:16));
+    out+=`<path class="trk" data-t="${j}" d="${annulus(a0,a1,RT,RT+TRK+6)}" fill="${T[j].color}"/>`;
+    const ap=arcPath(a0,a1,RT+TRK+(arcPath(a0,a1,1).flip?42:16));
     out+=`<path id="thl${j}" d="${ap.d}" fill="none"/><text data-t="${j}" font-family="${FONT}" font-size="36" font-weight="500" fill="${T[j].color}"><textPath href="#thl${j}" startOffset="50%" text-anchor="middle">${esc(T[j].name)}</textPath></text>`;
     if(O.showShares){
       const tot=tTot.reduce((x,y)=>x+y,0);
-      const ap2=arcPath(a0,a1,R+TRK+(arcPath(a0,a1,1).flip?66:54));
+      const ap2=arcPath(a0,a1,RT+TRK+(arcPath(a0,a1,1).flip?66:54));
       out+=`<path id="ths${j}" d="${ap2.d}" fill="none"/><text font-family="${FONT}" font-size="14" fill="#5D666E"><textPath href="#ths${j}" startOffset="50%" text-anchor="middle">${tot?Math.round(100*tTot[j]/tot):0}% of network effort</textPath></text>`;
     }
   });
   // side headings
   const Lb=S.labels;
-  [[P0,P1,rb+22,Lb.left,'hl'],[T0,T1,O.showShares?R+TRK+92:R+TRK+74,Lb.right,'hr']].forEach(([a0,a1,r,txt,id])=>{
+  [[P0,P1,rb+22,Lb.left,'hl'],[T0,T1,O.showShares?RT+TRK+92:RT+TRK+74,Lb.right,'hr']].forEach(([a0,a1,r,txt,id])=>{
     if(!txt)return;const ap=arcPath(a0,a1,r);
     out+=`<path id="${id}" d="${ap.d}" fill="none"/><text font-family="${FONT}" font-size="46" font-weight="700" fill="${Lb.color}"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(txt)}</textPath></text>`;
   });
@@ -415,10 +424,10 @@ function renderEditor(){
 const labelsEl=document.getElementById('labels');
 function syncLabels(){
   labelsEl.querySelectorAll('[data-lb]').forEach(el=>{if(document.activeElement!==el)el.value=S.labels[el.dataset.lb];});
-  labelsEl.querySelectorAll('[data-lo]').forEach(el=>{el.checked=!!S.opts[el.dataset.lo];});
+  labelsEl.querySelectorAll('[data-lo]').forEach(el=>{if(el.type==='checkbox')el.checked=!!S.opts[el.dataset.lo];else el.value=S.opts[el.dataset.lo];});
 }
 labelsEl.addEventListener('input',e=>{const t=e.target;
-  if(t.dataset.lb)S.labels[t.dataset.lb]=t.value;else if(t.dataset.lo)S.opts[t.dataset.lo]=t.checked;else return;
+  if(t.dataset.lb)S.labels[t.dataset.lb]=t.value;else if(t.dataset.lo)S.opts[t.dataset.lo]=t.type==='checkbox'?t.checked:+t.value;else return;
   changed(false);});
 labelsEl.addEventListener('change',e=>{const k=e.target.dataset.lb;if(k==='prefix'||k==='numbering')renderEditor();});
 function projOptions(sel){
