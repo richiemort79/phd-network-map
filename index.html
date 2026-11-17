@@ -6,7 +6,7 @@
 <title>Doctoral network map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=Varela+Round&display=swap" rel="stylesheet">
 <style>
 :root{
   box-sizing:border-box;
@@ -242,7 +242,7 @@ function arcPath(a0,a1,r){ // for textPath; flips on lower half so text reads up
 
 /* ---------- figure ---------- */
 const R=300, TRK=20, VB=550;
-const FONT='Public Sans, Helvetica, Arial, sans-serif';
+const FONT="'Arial Rounded MT Bold','Arial Rounded MT','Varela Round',Arial,sans-serif";
 function splitTitle(t){ // long titles wrap onto two lines at the space nearest the middle
   if(t.length<=10||t.indexOf(' ')<0)return [t];
   const mid=t.length/2;let best=-1;
