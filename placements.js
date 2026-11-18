@@ -67,7 +67,7 @@ ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.
 // each page fixes its layout with <body data-layout="cols|circ">
 const LAYOUT=document.body.dataset.layout==='circ'?'circ':'cols';
 const KEY='phd-placement-map-'+LAYOUT;
-const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true};
+const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true,showWPKey:false};
 try{Object.assign(O,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
 O.layout=LAYOUT;
 const hasHost=()=>O.links!=='sec', hasSec=()=>O.links!=='host';
@@ -125,16 +125,22 @@ function expKey(x0,y0,w){
   return out;
 }
 
-function legend(x,y){
-  let out=`<g font-family="${FONT}" font-size="15" fill="#1E2328">`;let yy=y;
-  if(O.colorBy==='kind'){
-    Object.entries(KINDS).filter(([k])=>k==='host'?hasHost():hasSec()).forEach(([,k])=>{
-      out+=`<rect x="${x}" y="${yy-11}" width="15" height="15" rx="2" fill="${k.color}"/><text x="${x+23}" y="${yy}">${esc(k.name)}</text>`;yy+=23;});
-  }else if(O.colorBy==='wp'){
-    WPS.forEach(w=>{out+=`<rect x="${x}" y="${yy-11}" width="15" height="15" rx="2" fill="${w.color}"/><text x="${x+23}" y="${yy}">${esc(w.name)}</text>`;yy+=23;});
+// legend block anchored at its bottom line (yb): optional work package key, colour swatches, ribbon-width note
+function legend(x,yb){
+  const rows=[],sw=(c,t)=>rows.push(`<rect x="${x}" y="{y-11}" width="15" height="15" rx="2" fill="${c}"/><text x="${x+23}" y="{y}">${esc(t)}</text>`);
+  if(O.showWPKey){
+    rows.push(`<text x="${x}" y="{y}" font-weight="700">Work packages</text>`);
+    WPS.forEach(w=>sw(w.color,`${w.name} · DC${w.dcs[0]}–DC${w.dcs[w.dcs.length-1]}`));
   }
-  out+=`<text x="${x}" y="${yy+4}" fill="#5D666E" font-size="13.5">${O.links==='both'?'Wide ribbon: host institution · narrow: secondment':O.links==='host'?'Each ribbon joins a DC to its host institution':'Each ribbon is one secondment'}</text>`;
-  return out+'</g>';
+  if(O.showLegend){
+    if(O.colorBy==='kind'&&O.showWPKey)rows.push(`<text x="${x}" y="{y}" font-weight="700">Ribbons</text>`);
+    if(O.colorBy==='kind')Object.entries(KINDS).filter(([k])=>k==='host'?hasHost():hasSec()).forEach(([,k])=>sw(k.color,k.name));
+    else if(O.colorBy==='wp'&&!O.showWPKey)WPS.forEach(w=>sw(w.color,w.name));
+    rows.push(`<text x="${x}" y="{y}" fill="#5D666E" font-size="13.5">${O.links==='both'?'Wide ribbon: host institution · narrow: secondment':O.links==='host'?'Each ribbon joins a DC to its host institution':'Each ribbon is one secondment'}</text>`);
+  }
+  if(!rows.length)return '';
+  const y0=yb-(rows.length-1)*23;
+  return `<g font-family="${FONT}" font-size="15" fill="#1E2328">`+rows.map((r,i)=>r.replace(/\{y(-11)?\}/g,(m,d)=>f(y0+i*23+(d?-11:0)))).join('')+'</g>';
 }
 
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
@@ -193,7 +199,7 @@ function buildCols(){
   [['acad',{both:'Academic partners',host:'Host institutions',sec:'Academic secondments'}[O.links]],['ind','Industrial secondments']].forEach(([type,txt])=>{
     if(!span[type])return;const [a0,a1]=span[type],c=TYPES[type].color;
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
-  if(O.showLegend)out+=legend(-600-P,O.colorBy==='partner'?590:O.colorBy==='kind'&&O.links!=='both'?545:522);
+  out+=legend(-600-P,597);
   if(O.showKey)out+=expKey(v[0]+40,CB+10,v[2]-80);
   return out;
 }
@@ -243,7 +249,7 @@ function buildCirc(){
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${t.color}"/>`+arcText('ct'+k,a0,a1,isFlip(a0,a1)?rp+28:rp+10,t.name,`font-size="24" font-weight="500" fill="${t.color}"`);});
   out+=arcText('chl',P0,P1,rb+22,'Doctoral candidates',`font-size="46" font-weight="700" fill="#6B4FA0"`);
   out+=arcText('chr',rad(20),rad(160),rp+52,{both:'Hosts & secondments',host:'Host institutions',sec:'Secondments'}[O.links],`font-size="40" font-weight="700" fill="#6B4FA0"`);
-  if(O.showLegend)out+=legend(-540,O.colorBy==='partner'?530:450);
+  out+=legend(-540,530);
   if(O.showKey)out+=expKey(v[0]+40,CV+10,v[2]-80);
   return out;
 }
@@ -262,6 +268,7 @@ function draw(){
   document.getElementById('optIcons').checked=O.showIcons;
   document.getElementById('optKey').checked=O.showKey;
   document.getElementById('optWP').checked=O.showWP;
+  document.getElementById('optWPKey').checked=O.showWPKey;
 }
 const set=(k,v)=>{O[k]=v;saveOpts();draw();};
 document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>set('colorBy',b.dataset.color)));
@@ -270,6 +277,7 @@ document.getElementById('optLegend').addEventListener('change',e=>set('showLegen
 document.getElementById('optIcons').addEventListener('change',e=>set('showIcons',e.target.checked));
 document.getElementById('optKey').addEventListener('change',e=>set('showKey',e.target.checked));
 document.getElementById('optWP').addEventListener('change',e=>set('showWP',e.target.checked));
+document.getElementById('optWPKey').addEventListener('change',e=>set('showWPKey',e.target.checked));
 
 /* ---------- hover ---------- */
 const tip=document.getElementById('tip');
