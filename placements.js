@@ -140,7 +140,7 @@ function legend(x,y){
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
 const CB=620;
 function buildCols(){
-  const L=links(),Ri=440,TRK=22,bx=115,top=-370,bot=370,P=iconPad(),v=vb();
+  const L=links(),Ri=440,TRK=22,bx=45,top=-370,bot=370,P=iconPad(),v=vb();
   let out=`<rect x="${v[0]}" y="${v[1]}" width="${v[2]}" height="${v[3]}" fill="#FFFFFF"/>`;
   const order={acad:partnerOrder(L,'acad'),ind:partnerOrder(L,'ind')};
   const pos=new Map();[...order.acad,...order.ind].forEach((p,i)=>pos.set(p.id,i));
