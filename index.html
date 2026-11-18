@@ -196,9 +196,9 @@ function example(){
   ];
   // [title, Origin, Evolution, Function] — weights are placeholders estimated from the reference figure
   const P={
-    wpM:[['Dark matter',6,2,4],['Extreme conditions',5,3,4],['IOM vs Melanin',4,2,6],['PyM AM models',3,2,7],['EM PM models',3,2,7]],
+    wpM:[['Dark matter',9,3,5],['Extreme conditions',8,4,5],['IOM vs Melanin',4,2,6],['PyM AM models',2,2,8],['EM PM models',3,2,7]],
     wpS:[['MS Chem Meth',2,5,5],['MS Chem Shape',1,5,6],['Archaeal melanin',2,8,2],['Bacterial melanin',2,8,2],['Fungal melanin',2,7,3]],
-    wpT:[['Thermo-mech',1,2,9],['MS organisation',1,3,8],['Colour traits',2,6,4],['MS dynamics',1,4,7]]
+    wpT:[['Thermo-mech',1,6,9],['MS organisation',1,3,8],['Colour traits',2,6,4],['MS dynamics',1,2,7]]
   };
   const projects=[];
   wps.forEach(wp=>P[wp.id].forEach((r,i)=>projects.push({id:wp.id+'p'+i,wp:wp.id,title:r[0],w:r.slice(1)})));
