@@ -180,7 +180,7 @@ function buildCols(){
   // DC boxes + WP labels
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=lum(col)>0.21?'#1E2328':'#FFFFFF';
     out+=`<g class="node" data-dc="${d.id}"><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
-      `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan><tspan dx="6">${esc(d.title)}</tspan></text></g>`;});
+      `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan></text></g>`;});
   if(O.showWP)WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
     out+=`<text x="0" y="${f(dy[i][0]-11)}" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="700" fill="${wp.color}">${esc(wp.name)}</text>`;});
   out+=`<text x="0" y="${top-38}" text-anchor="middle" font-family="${FONT}" font-size="32" font-weight="700" fill="#6B4FA0">Doctoral candidates</text>`;
