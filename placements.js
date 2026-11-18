@@ -67,7 +67,7 @@ ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.
 // each page fixes its layout with <body data-layout="cols|circ">
 const LAYOUT=document.body.dataset.layout==='circ'?'circ':'cols';
 const KEY='phd-placement-map-'+LAYOUT;
-const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false};
+const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true};
 try{Object.assign(O,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
 O.layout=LAYOUT;
 const hasHost=()=>O.links!=='sec', hasSec=()=>O.links!=='host';
@@ -112,7 +112,7 @@ const ribAttrs=l=>`class="rib" data-dc="${l.dc}" data-pt="${l.pt}" data-kind="${
 // expertise of a partner across the links currently shown (UGent is Microscopy for secondments, Cell biology as host)
 function ptExps(L,id){const s=[];L.forEach(l=>{if(l.pt===id&&!s.includes(l.exp))s.push(l.exp);});return s;}
 const iconPad=()=>{if(!O.showIcons)return 0;const L=links();return ICON_STEP*Math.max(0,...PARTNERS.map(p=>ptExps(L,p.id).length));};
-function icon(x,y,exp,attrs){return `<g transform="translate(${f(x)} ${f(y)})"${attrs||''} fill="none" stroke="#175D50" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle r="12" fill="#EEF5F2" stroke="none"/>${ICONS[exp]||ICONS.TBD}</g>`;}
+function icon(x,y,exp,attrs){return `<g transform="translate(${f(x)} ${f(y)})"${attrs||''} fill="none" stroke="#1E2328" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle r="12" fill="#FFFFFF" fill-opacity="0" stroke="none"/>${ICONS[exp]||ICONS.TBD}</g>`;}
 // icons stacked outward along the partner's radius, starting just beyond its arc
 const ptIcons=(L,p,m,r0)=>O.showIcons?ptExps(L,p.id).map((e,k)=>{const [x,y]=pt(m,r0+12+k*ICON_STEP);return icon(x,y,e,` class="node" data-pt="${p.id}"`);}).join(''):'';
 function keyExps(){const s=[];links().forEach(l=>{if(!s.includes(l.exp))s.push(l.exp);});return s.sort((a,b)=>(a==='TBD')-(b==='TBD')||a.localeCompare(b));}
@@ -181,7 +181,7 @@ function buildCols(){
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=lum(col)>0.21?'#1E2328':'#FFFFFF';
     out+=`<g class="node" data-dc="${d.id}"><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
       `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan><tspan dx="6">${esc(d.title)}</tspan></text></g>`;});
-  WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
+  if(O.showWP)WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
     out+=`<text x="0" y="${f(dy[i][0]-11)}" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="700" fill="${wp.color}">${esc(wp.name)}</text>`;});
   out+=`<text x="0" y="${top-38}" text-anchor="middle" font-family="${FONT}" font-size="32" font-weight="700" fill="#6B4FA0">Doctoral candidates</text>`;
   // partner arcs with radial labels
@@ -230,7 +230,7 @@ function buildCirc(){
     out+=`<path class="node" data-dc="${d.id}" d="${annulus(a0,a1,R,R+PT)}" fill="${col}"/>`;
     out+=`<g class="node" data-dc="${d.id}">`+arcText('cc'+i,a0,a1,R+PT/2+(isFlip(a0,a1)?4.5:-4.5),d.code,`font-size="13" font-weight="700" fill="${lum(col)>0.21?'#1E2328':'#FFFFFF'}"`)+'</g>';});
   const rb=R+PT+42;
-  WPS.forEach((wp,k)=>{const idx=DCS.map((d,i)=>d.wp===wp.id?i:-1).filter(i=>i>=0);const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
+  if(O.showWP)WPS.forEach((wp,k)=>{const idx=DCS.map((d,i)=>d.wp===wp.id?i:-1).filter(i=>i>=0);const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
     out+=`<path d="${annulus(a0,a1,rb,rb+4)}" fill="${wp.color}"/>`+arcText('cw'+k,a0,a1,isFlip(a0,a1)?rb-8:rb-25,wp.name,`font-size="24" font-weight="500" fill="${wp.color}"`);});
   // partner arcs with radial labels
   ps.forEach((p,j)=>{const [a0,a1]=qa[j],m=(a0+a1)/2,[lx,ly]=pt(m,RT+TRK+8+P);
@@ -261,6 +261,7 @@ function draw(){
   document.getElementById('optLegend').checked=O.showLegend;
   document.getElementById('optIcons').checked=O.showIcons;
   document.getElementById('optKey').checked=O.showKey;
+  document.getElementById('optWP').checked=O.showWP;
 }
 const set=(k,v)=>{O[k]=v;saveOpts();draw();};
 document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>set('colorBy',b.dataset.color)));
@@ -268,6 +269,7 @@ document.querySelectorAll('[data-links]').forEach(b=>b.addEventListener('click',
 document.getElementById('optLegend').addEventListener('change',e=>set('showLegend',e.target.checked));
 document.getElementById('optIcons').addEventListener('change',e=>set('showIcons',e.target.checked));
 document.getElementById('optKey').addEventListener('change',e=>set('showKey',e.target.checked));
+document.getElementById('optWP').addEventListener('change',e=>set('showWP',e.target.checked));
 
 /* ---------- hover ---------- */
 const tip=document.getElementById('tip');
