@@ -1,0 +1,8 @@
+# Reference images dropped in while designing
+Screenshot*.png
+Pasted image*.png
+
+# Working files, not used by the site
+# (placements.js already holds the data from Table_v3.xlsx)
+paola_script.py
+Table_v*.xlsx
