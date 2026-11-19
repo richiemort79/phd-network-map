@@ -86,6 +86,7 @@ const dcById=id=>DCS.find(d=>d.id===id), ptById=id=>PARTNERS.find(p=>p.id===id);
 function dcColor(dc){const l=DCS.filter(d=>d.wp===dc.wp),i=l.indexOf(dc),n=l.length;return shade(wpOf(dc).color,n>1?-0.22+0.5*i/(n-1):0);}
 function ptColor(p){if(p.tbd)return TBD_COLOR;const l=PARTNERS.filter(q=>q.type===p.type&&!q.tbd),i=l.indexOf(p),n=l.length;return shade(TYPES[p.type].color,n>1?-0.15+0.6*i/(n-1):0);}
 function ribColor(l){return O.colorBy==='wp'?dcColor(dcById(l.dc)):O.colorBy==='kind'?KINDS[l.kind].color:ptColor(ptById(l.pt));}
+const hostOf=d=>(ALL.find(l=>l.dc===d.id&&l.kind==='host')||{}).pt||'';
 const wOf=l=>l.kind==='host'?HOST_WEIGHT:SEC_WEIGHT;
 const links=()=>ALL.filter(l=>l.kind==='host'?hasHost():hasSec());
 const fullName=p=>FULL_NAMES[p.id]?`${esc(p.id)} · ${esc(FULL_NAMES[p.id])}`:esc(p.tbd?'Industrial partner to be confirmed':p.id);
@@ -146,7 +147,8 @@ function legend(x,yb){
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
 const CB=620;
 function buildCols(){
-  const L=links(),Ri=440,TRK=22,bx=45,top=-370,bot=370,P=iconPad(),v=vb();
+  // with hosts hidden, each box also names the DC's host, so the boxes widen to fit
+  const L=links(),Ri=440,TRK=22,bx=hasHost()?45:85,top=-370,bot=370,P=iconPad(),v=vb();
   let out=`<rect x="${v[0]}" y="${v[1]}" width="${v[2]}" height="${v[3]}" fill="#FFFFFF"/>`;
   const order={acad:partnerOrder(L,'acad'),ind:partnerOrder(L,'ind')};
   const pos=new Map();[...order.acad,...order.ind].forEach((p,i)=>pos.set(p.id,i));
@@ -186,7 +188,7 @@ function buildCols(){
   // DC boxes + WP labels
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=lum(col)>0.21?'#1E2328':'#FFFFFF';
     out+=`<g class="node" data-dc="${d.id}"><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
-      `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan></text></g>`;});
+      `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan>${hasHost()?'':`<tspan dx="7">${esc(hostOf(d))}</tspan>`}</text></g>`;});
   if(O.showWP)WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
     out+=`<text x="0" y="${f(dy[i][0]-11)}" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="700" fill="${wp.color}">${esc(wp.name)}</text>`;});
   out+=`<text x="0" y="${top-38}" text-anchor="middle" font-family="${FONT}" font-size="32" font-weight="700" fill="#6B4FA0">Doctoral candidates</text>`;
@@ -294,7 +296,7 @@ fig.addEventListener('mouseover',e=>{
   }else if(el.dataset.dc){
     const d=dcById(el.dataset.dc),ls=L.filter(x=>x.dc===d.id);
     on(`[data-dc="${d.id}"]`);ls.forEach(x=>on(`.node[data-pt="${x.pt}"]`));
-    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(x.pt)}</b> (${esc(x.exp)})`).join('');
+    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+(hasHost()?'':`<br>Host institution: <b>${esc(hostOf(d))}</b>`)+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(x.pt)}</b> (${esc(x.exp)})`).join('');
   }else{
     const p=ptById(el.dataset.pt),ls=L.filter(x=>x.pt===p.id);
     on(`[data-pt="${p.id}"]`);ls.forEach(x=>on(`.node[data-dc="${x.dc}"]`));
