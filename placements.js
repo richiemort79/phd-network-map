@@ -143,27 +143,41 @@ function circPad(){if(!O.showIcons)return 0;const L=links(),ps=PARTNERS.filter(p
   const w=ps.map(p=>textW(p.name,15)),wi=ps.map((p,i)=>w[i]+(ptExps(L,p.id).length?10+ptExps(L,p.id).length*ICON_GAP:0));
   return Math.max(0,Math.max(...wi)-Math.max(...w));}
 function keyExps(){const s=[];links().forEach(l=>{if(l.exp&&!s.includes(l.exp))s.push(l.exp);});return s.sort((a,b)=>(a==='TBD')-(b==='TBD')||a.localeCompare(b));}
-// expertise key: a wide, shallow block with as many columns as the figure width allows
+// key band under the plot: work packages in the first column, then expertise in as many columns as fit
+const KEY_HEAD=26, KEY_TOP=50;
+const wpLabel=wp=>`${wp.name} · DC${wp.dcs[0]}–DC${wp.dcs[wp.dcs.length-1]}`;
+// width of the work package column: its longest label plus swatch and a gap before the expertise columns
+const wpkW=()=>28+Math.max(...WPS.map(wp=>textW(wpLabel(wp),14.5)))+36;
 const keyW=()=>vbBase()[2]-80;
-const keyCols=w=>Math.max(3,Math.floor(w/KEY_COLW));
-const keyH=()=>O.showKey?62+Math.ceil(keyExps().length/keyCols(keyW()))*KEY_ROW:0;
-function expKey(x0,y0,w){
-  const ex=keyExps(),cols=keyCols(w),rows=Math.ceil(ex.length/cols),cw=w/cols;
-  let out=`<path d="M${f(x0)},${f(y0)}H${f(x0+w)}" stroke="#D5DAD7" fill="none"/><text x="${f(x0)}" y="${f(y0+32)}" font-family="${FONT}" font-size="20" font-weight="700" fill="#1E2328">Expertise</text>`;
-  ex.forEach((e,i)=>{const x=x0+Math.floor(i/rows)*cw+12,y=y0+60+(i%rows)*KEY_ROW;
-    out+=icon(x,y,e)+`<text x="${f(x+20)}" y="${f(y)}" dominant-baseline="central" font-family="${FONT}" font-size="14.5" fill="#1E2328">${esc(e==='TBD'?'To be confirmed':e)}</text>`;});
+const keyCols=w=>Math.max(2,Math.floor(w/KEY_COLW));
+function keyH(){
+  if(!O.showKey&&!O.showWPKey)return 0;
+  const er=O.showKey?Math.ceil(keyExps().length/keyCols(keyW()-(O.showWPKey?wpkW():0))):0;
+  return KEY_TOP+Math.max(er,O.showWPKey?WPS.length:0)*KEY_ROW-8;
+}
+function keyBand(x0,y0,w){
+  if(!O.showKey&&!O.showWPKey)return '';
+  const head=(x,t)=>`<text x="${f(x)}" y="${f(y0+KEY_HEAD)}" font-family="${FONT}" font-size="18" font-weight="700" fill="#1E2328">${t}</text>`;
+  const lbl=(x,y,t)=>`<text x="${f(x)}" y="${f(y)}" dominant-baseline="central" font-family="${FONT}" font-size="14.5" fill="#1E2328">${esc(t)}</text>`;
+  let out=`<path d="M${f(x0)},${f(y0)}H${f(x0+w)}" stroke="#D5DAD7" fill="none"/>`,ex0=x0;
+  if(O.showWPKey){
+    out+=head(x0,'Work packages');
+    WPS.forEach((wp,i)=>{const y=y0+KEY_TOP+i*KEY_ROW;
+      out+=`<rect x="${f(x0+4)}" y="${f(y-7.5)}" width="15" height="15" rx="2" fill="${wp.color}"/>`+lbl(x0+28,y,wpLabel(wp));});
+    ex0+=wpkW();
+  }
+  if(O.showKey){
+    const ex=keyExps(),ew=x0+w-ex0,cols=keyCols(ew),rows=Math.ceil(ex.length/cols),cw=ew/cols;
+    out+=head(ex0,'Expertise');
+    ex.forEach((e,i)=>{const x=ex0+Math.floor(i/rows)*cw+12,y=y0+KEY_TOP+(i%rows)*KEY_ROW;
+      out+=icon(x,y,e)+lbl(x+20,y,e==='TBD'?'To be confirmed':e);});
+  }
   return out;
 }
 
 // rows of a key block; {y}/{y-11} are filled in once the block's position is known
 const swatchRow=(rows,x,c,t)=>rows.push(`<rect x="${x}" y="{y-11}" width="15" height="15" rx="2" fill="${c}"/><text x="${x+23}" y="{y}">${esc(t)}</text>`);
 const placeRows=(rows,y0,dy=23,size=15)=>rows.length?`<g font-family="${FONT}" font-size="${size}" fill="#1E2328">`+rows.map((r,i)=>r.replace(/\{y(-11)?\}/g,(m,d)=>f(y0+i*dy+(d?-11:0)))).join('')+'</g>':'';
-// work package key, anchored at its top line (yt) in the figure's top-left corner
-function wpKey(x,yt){
-  if(!O.showWPKey)return '';const rows=[`<text x="${x}" y="{y}" font-weight="700">Work packages</text>`];
-  WPS.forEach(w=>swatchRow(rows,x,w.color,`${w.name} · DC${w.dcs[0]}–DC${w.dcs[w.dcs.length-1]}`));
-  return placeRows(rows,yt,21,14);
-}
 // ribbon legend anchored at its bottom line (yb): colour swatches and the ribbon-width note
 function legend(x,yb){
   const rows=[],sw=(c,t)=>swatchRow(rows,x,c,t);
@@ -186,7 +200,7 @@ const linkTitle=()=>{const p=[hasHost()&&'Hosts',hasSec()&&'secondments',hasTrai
   const t=p.length>1?p.slice(0,-1).join(', ')+' & '+p[p.length-1]:p[0]||'';return t.charAt(0).toUpperCase()+t.slice(1);};
 
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
-const CB=620,CBOT=560; // half-width and bottom edge of the centre figure
+const CB=620,CBOT=548; // half-width and bottom edge of the centre figure
 function buildCols(){
   // with hosts hidden, each box also names the DC's host, so the boxes widen to fit
   const L=links(),Ri=440,TRK=22,bx=hasHost()?45:85,top=-370,bot=370,v=vb();
@@ -251,13 +265,12 @@ function buildCols(){
   [['acad',only('host')?'Host institutions':only('sec')?'Academic secondments':'Academic partners'],['ind',only('sec')?'Industrial secondments':'Industrial partners'],['train','Training']].forEach(([type,txt])=>{
     if(!span[type])return;const [a0,a1]=span[type],c=TYPES[type].color;
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),isFlip(a0-rad(15),a1+rad(15))?rp+44:rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
-  out+=wpKey(-CB+10,-494)+legend(-600,CBOT-20);
-  if(O.showKey)out+=expKey(v[0]+40,CBOT+10,keyW());
+  out+=legend(-600,CBOT-14)+keyBand(v[0]+40,CBOT+8,keyW());
   return out;
 }
 
 /* ---------- circular ---------- */
-const CV=560;
+const CV=560,CVB=540; // radius of the circular figure's frame and its bottom edge
 function buildCirc(){
   const L=links(),R=300,PT=28,RT=340,TRK=24,v=vb();
   let out=`<rect x="${v[0]}" y="${v[1]}" width="${v[2]}" height="${v[3]}" fill="#FFFFFF"/>`;
@@ -301,15 +314,14 @@ function buildCirc(){
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${t.color}"/>`+arcText('ct'+k,a0,a1,isFlip(a0,a1)?rp+28:rp+10,t.name,`font-size="24" font-weight="500" fill="${t.color}"`);});
   out+=arcText('chl',P0,P1,rb+22,'Doctoral candidates',`font-size="46" font-weight="700" fill="#6B4FA0"`);
   out+=arcText('chr',rad(20),rad(160),rp+52,linkTitle(),`font-size="40" font-weight="700" fill="#6B4FA0"`);
-  out+=wpKey(-CV+20,-CV+30)+legend(-540,530);
-  if(O.showKey)out+=expKey(v[0]+40,CV+10,keyW());
+  out+=legend(-540,CVB-14)+keyBand(v[0]+40,CVB+8,keyW());
   return out;
 }
 
 /* ---------- render ---------- */
 const fig=document.getElementById('fig');
-const vbBase=()=>O.layout==='cols'?[-CB,-510,2*CB,510+CBOT]:[-CV,-CV,2*CV+circPad(),2*CV];
-const vb=()=>{const v=vbBase();if(O.showKey)v[3]+=keyH()+10;return v;};
+const vbBase=()=>O.layout==='cols'?[-CB,-510,2*CB,510+CBOT]:[-CV,-CV,2*CV+circPad(),CV+CVB];
+const vb=()=>{const v=vbBase(),h=keyH();if(h)v[3]+=h+16;return v;};
 const build=()=>O.layout==='cols'?buildCols():buildCirc();
 function draw(){
   fig.setAttribute('viewBox',vb().join(' '));fig.style.maxWidth=O.layout==='circ'?'900px':'1000px';
