@@ -1,21 +1,22 @@
 (function(){
 /* ---------- data (from Table_v3.xlsx) ---------- */
-// [DC, [host, expertise], [[academic secondment, expertise], ...], [industrial secondment, expertise]]
+// [DC, [host, expertise], [[academic secondment, expertise], ...], [industrial secondment, expertise],
+//  [[training partner, expertise ('' if not given), 'acad'|'ind'], ...]]
 const TABLE=[
-["DC1", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"]],
-["DC2", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"], ["INAF", "Astrobiology"]], ["AV", "Immunology"]],
-["DC3", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"]],
-["DC4", ["UDG", "Computational chemistry"], [["KCL", "Computational chemistry"]], ["ME", "Radioprotection"]],
-["DC5", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"]],
-["DC6", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"], ["UCMZ", "Phylogenetics"]], ["PE", "Organic chemistry"]],
-["DC7", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"], ["UCMZ", "Phylogenetics"]], ["PE", "Organic chemistry"]],
-["DC8", ["LU", "Cell biology"], [["UCC", "Spectroscopy"], ["UniNA", "Organic chemistry"], ["UR", "Phylogenetics"]], ["BG", "Stimuli-responsive polymers"]],
-["DC9", ["UniNA", "Biochemistry"], [["UNIL", "Phylogenetics"]], ["FIB", "Material chemistry"]],
-["DC10", ["UGent", "Cell biology"], [["UniNA", "Organic chemistry"]], ["ME", "Radioprotection"]],
-["DC11", ["UGent", "Cell biology"], [["UniNA", "Organic chemistry"], ["UE", "Biofabrication"]], ["TBD", "TBD"]],
-["DC12", ["UGent", "Cell biology"], [["LU", "Cell biology"], ["OSU", "Cell biology"]], ["ME", "Radioprotection"]],
-["DC13", ["UNIL", "Phylogenetics"], [["UCMZ", "Phylogenetics"]], ["SOI", "TBD"]],
-["DC14", ["LU", "Cell biology"], [["UGent", "Microscopy"]], ["AV", "Immunology"]]
+["DC1", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"], [["INAF", "", "acad"]]],
+["DC2", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"], []],
+["DC3", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], [["MT", "", "ind"]]],
+["DC4", ["UDG", "Computational chemistry"], [["KCL", "Computational chemistry"]], ["ME", "Radioprotection"], [["UL", "", "ind"]]],
+["DC5", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], []],
+["DC6", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "", "acad"]]],
+["DC7", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "", "acad"]]],
+["DC8", ["LU", "Cell biology"], [["UR", "Phylogenetics"]], ["BG", "Stimuli-responsive polymers"], [["UniNA", "Organic chemistry", "acad"], ["UCC", "Spectroscopy", "acad"]]],
+["DC9", ["UniNA", "Biochemistry"], [["UNIL", "Phylogenomic evolution"]], ["FIB", "Material chemistry"], []],
+["DC10", ["UGent", "Cell biology"], [["UniNA", "Organic chemistry"]], ["ME", "Radioprotection"], []],
+["DC11", ["UGent", "Organismal biology"], [["TUE", "Biofabrication"]], ["ME", "Radioprotection"], []],
+["DC12", ["UGent", "Cell biology"], [["LU", "Cell biology"]], ["ME", "Radioprotection"], []],
+["DC13", ["UNIL", "Evolutionary ecology"], [["UCMZ", "Phylogenetics"]], ["SOI", "Avian ecology"], []],
+["DC14", ["LU", "Cell biology"], [["UGent", "Microscopy"]], ["AV", "Immunology"], []]
 ];
 // project titles and work packages, as in the theme map
 const TITLES=['Dark matter','Extreme conditions','IOM vs Melanin','PyM AM models','EM PM models','MS Chem Meth','MS Chem Shape',
@@ -27,10 +28,10 @@ const WPS=[
 ];
 // optional full names shown in tooltips, e.g. UCC:'University College Cork'
 const FULL_NAMES={};
-const HOST_WEIGHT=2, SEC_WEIGHT=1;
+const HOST_WEIGHT=2, SEC_WEIGHT=1; // training interactions are drawn at secondment width
 
 const TYPES={acad:{name:'Academic',color:'#005392'},ind:{name:'Industrial',color:'#DC7E65'}};
-const KINDS={host:{name:'Host institution',color:'#005392'},acad:{name:'Academic secondment',color:'#D4C35A'},ind:{name:'Industrial secondment',color:'#DC7E65'}};
+const KINDS={host:{name:'Host institution',color:'#005392'},acad:{name:'Academic secondment',color:'#D4C35A'},ind:{name:'Industrial secondment',color:'#DC7E65'},train:{name:'Training interaction',color:'#4E9A7A'}};
 const TBD_COLOR='#B5BBBF';
 
 // expertise pictograms (from Paola's MOSAIC script; Biochemistry added), drawn in a ±10 box
@@ -49,6 +50,10 @@ const ICONS={
   'Software development':'<rect x="-10" y="-8" width="20" height="16" rx="2"/><path d="m-4-3-3 3 3 3m8-6 3 3-3 3M1-4-1 4"/>',
   'Stimuli-responsive polymers':'<path d="m-10 5 5-5 5 5 5-5 5 5M-8-5h7m-3-3 3 3-3 3M6-9l-2 5h4L5 0"/>',
   'Material chemistry':'<path d="m0-9 8 5v8L0 9l-8-5v-8zM-8-4 0 1l8-5M0 1v8"/><circle cx="0" cy="-9" r="1"/><circle cx="-8" cy="4" r="1"/><circle cx="8" cy="4" r="1"/>',
+  'Phylogenomic evolution':'<path d="M-9 8h18M-7 8V0h6v8M-4 0v-6h7v14M0-6v-3h7v17"/>',
+  'Organismal biology':'<path d="M-9 0c4-6 10-6 14 0-4 6-10 6-14 0zM5 0l4-4v8z"/><path d="M-5-1h.1"/>',
+  'Evolutionary ecology':'<path d="M-8 9C-9-3-1-9 9-9 9 2 3 9-8 9zM-8 9 3-2"/>',
+  'Avian ecology':'<path d="M-10-2q5-6 10 1 5-7 10-1M-6 7h12"/>',
   'TBD':'<path d="M-4-4a4 4 0 1 1 7 3C2 0 0 1 0 3M0 7h.1"/>'
 };
 const ICON_STEP=26, KEY_ROW=34, KEY_COLS=3;
@@ -59,18 +64,24 @@ TABLE.forEach(r=>{
   ALL.push({dc:r[0],pt:r[1][0],kind:'host',exp:r[1][1]});
   r[2].forEach(s=>ALL.push({dc:r[0],pt:s[0],kind:'acad',exp:s[1]}));
   if(r[3]&&r[3][0])ALL.push({dc:r[0],pt:r[3][0],kind:'ind',exp:r[3][1]});
+  (r[4]||[]).forEach(t=>ALL.push({dc:r[0],pt:t[0],kind:'train',exp:t[1],type:t[2]}));
 });
 const PARTNERS=[];
-ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.kind==='ind'?'ind':'acad',name:l.pt,tbd:l.pt==='TBD'});});
+// a partner sits on the academic or industrial side by its first link (training rows carry their own category)
+ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.type||(l.kind==='ind'?'ind':'acad'),name:l.pt,tbd:l.pt==='TBD'});});
 
 /* ---------- options ---------- */
 // each page fixes its layout with <body data-layout="cols|circ">
 const LAYOUT=document.body.dataset.layout==='circ'?'circ':'cols';
 const KEY='phd-placement-map-'+LAYOUT;
-const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true,showWPKey:false,dcText:'auto'};
-try{Object.assign(O,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
+const O={colorBy:'wp',show:{host:true,sec:true,train:true},showLegend:true,showIcons:false,showKey:false,showWP:true,showWPKey:false,dcText:'auto'};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');
+  // earlier versions saved a single hosts/secondments choice
+  if(s.links&&!s.show)s.show={host:s.links!=='sec',sec:s.links!=='host',train:true};delete s.links;
+  Object.assign(O,s);}catch(e){}
 O.layout=LAYOUT;
-const hasHost=()=>O.links!=='sec', hasSec=()=>O.links!=='host';
+const hasHost=()=>O.show.host, hasSec=()=>O.show.sec, hasTrain=()=>O.show.train;
+const shown=k=>k==='host'?O.show.host:k==='train'?O.show.train:O.show.sec;
 const saveOpts=()=>{try{localStorage.setItem(KEY,JSON.stringify(O));}catch(e){}};
 
 /* ---------- helpers ---------- */
@@ -89,8 +100,9 @@ function ribColor(l){return O.colorBy==='wp'?dcColor(dcById(l.dc)):O.colorBy==='
 // DC box labels: auto picks white or dark per box for contrast; white/black use one colour throughout
 const dcTextColor=col=>O.dcText==='white'?'#FFFFFF':O.dcText==='black'?'#1E2328':lum(col)>0.21?'#1E2328':'#FFFFFF';
 const hostOf=d=>(ALL.find(l=>l.dc===d.id&&l.kind==='host')||{}).pt||'';
+const fade=(L,d)=>L.some(l=>l.dc===d.id)?'':' opacity="0.3"';
 const wOf=l=>l.kind==='host'?HOST_WEIGHT:SEC_WEIGHT;
-const links=()=>ALL.filter(l=>l.kind==='host'?hasHost():hasSec());
+const links=()=>ALL.filter(l=>shown(l.kind));
 const fullName=p=>FULL_NAMES[p.id]?`${esc(p.id)} · ${esc(FULL_NAMES[p.id])}`:esc(p.tbd?'Industrial partner to be confirmed':p.id);
 
 // order partners by the mean position of the DCs they link to, so ribbons cross as little as possible
@@ -113,12 +125,12 @@ function arcText(id,a0,a1,r,txt,attrs){const ap=arcPath(a0,a1,r);
 const ribAttrs=l=>`class="rib" data-dc="${l.dc}" data-pt="${l.pt}" data-kind="${l.kind}" fill="${ribColor(l)}" fill-opacity="0.72" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="0.8"`;
 
 // expertise of a partner across the links currently shown (UGent is Microscopy for secondments, Cell biology as host)
-function ptExps(L,id){const s=[];L.forEach(l=>{if(l.pt===id&&!s.includes(l.exp))s.push(l.exp);});return s;}
+function ptExps(L,id){const s=[];L.forEach(l=>{if(l.pt===id&&l.exp&&!s.includes(l.exp))s.push(l.exp);});return s;}
 const iconPad=()=>{if(!O.showIcons)return 0;const L=links();return ICON_STEP*Math.max(0,...PARTNERS.map(p=>ptExps(L,p.id).length));};
 function icon(x,y,exp,attrs){return `<g transform="translate(${f(x)} ${f(y)})"${attrs||''} fill="none" stroke="#1E2328" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle r="12" fill="#FFFFFF" fill-opacity="0" stroke="none"/>${ICONS[exp]||ICONS.TBD}</g>`;}
 // icons stacked outward along the partner's radius, starting just beyond its arc
 const ptIcons=(L,p,m,r0)=>O.showIcons?ptExps(L,p.id).map((e,k)=>{const [x,y]=pt(m,r0+12+k*ICON_STEP);return icon(x,y,e,` class="node" data-pt="${p.id}"`);}).join(''):'';
-function keyExps(){const s=[];links().forEach(l=>{if(!s.includes(l.exp))s.push(l.exp);});return s.sort((a,b)=>(a==='TBD')-(b==='TBD')||a.localeCompare(b));}
+function keyExps(){const s=[];links().forEach(l=>{if(l.exp&&!s.includes(l.exp))s.push(l.exp);});return s.sort((a,b)=>(a==='TBD')-(b==='TBD')||a.localeCompare(b));}
 const keyH=()=>O.showKey?80+Math.ceil(keyExps().length/KEY_COLS)*KEY_ROW:0;
 function expKey(x0,y0,w){
   const ex=keyExps(),rows=Math.ceil(ex.length/KEY_COLS),cw=w/KEY_COLS;
@@ -137,14 +149,24 @@ function legend(x,yb){
   }
   if(O.showLegend){
     if(O.colorBy==='kind'&&O.showWPKey)rows.push(`<text x="${x}" y="{y}" font-weight="700">Ribbons</text>`);
-    if(O.colorBy==='kind')Object.entries(KINDS).filter(([k])=>k==='host'?hasHost():hasSec()).forEach(([,k])=>sw(k.color,k.name));
+    if(O.colorBy==='kind')Object.entries(KINDS).filter(([k])=>shown(k)).forEach(([,k])=>sw(k.color,k.name));
     else if(O.colorBy==='wp'&&!O.showWPKey)WPS.forEach(w=>sw(w.color,w.name));
-    rows.push(`<text x="${x}" y="{y}" fill="#5D666E" font-size="13.5">${O.links==='both'?'Wide ribbon: host institution · narrow: secondment':O.links==='host'?'Each ribbon joins a DC to its host institution':'Each ribbon is one secondment'}</text>`);
+    rows.push(`<text x="${x}" y="{y}" fill="#5D666E" font-size="13.5">${widthNote()}</text>`);
   }
   if(!rows.length)return '';
   const y0=yb-(rows.length-1)*23;
   return `<g font-family="${FONT}" font-size="15" fill="#1E2328">`+rows.map((r,i)=>r.replace(/\{y(-11)?\}/g,(m,d)=>f(y0+i*23+(d?-11:0)))).join('')+'</g>';
 }
+
+function widthNote(){
+  const others=[hasSec()&&'secondment',hasTrain()&&'training interaction'].filter(Boolean);
+  if(hasHost()&&others.length)return `Wide ribbon: host institution · narrow: ${others.join(' or ')}`;
+  if(hasHost())return 'Each ribbon joins a DC to its host institution';
+  return `Each ribbon is one ${others.join(' or ')}`;
+}
+// heading text for the set of link types shown
+const linkTitle=()=>{const p=[hasHost()&&'Hosts',hasSec()&&'secondments',hasTrain()&&'training'].filter(Boolean);
+  const t=p.length>1?p.slice(0,-1).join(', ')+' & '+p[p.length-1]:p[0]||'';return t.charAt(0).toUpperCase()+t.slice(1);};
 
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
 const CB=620;
@@ -154,8 +176,8 @@ function buildCols(){
   let out=`<rect x="${v[0]}" y="${v[1]}" width="${v[2]}" height="${v[3]}" fill="#FFFFFF"/>`;
   const order={acad:partnerOrder(L,'acad'),ind:partnerOrder(L,'ind')};
   const pos=new Map();[...order.acad,...order.ind].forEach((p,i)=>pos.set(p.id,i));
-  // centre column: box height by total link weight
-  const dg=8,wg=34,tot=DCS.map(d=>sum(L.filter(l=>l.dc===d.id).map(wOf)));
+  // centre column: box height by total link weight; a DC with no links shown keeps a small faded box
+  const dg=8,wg=34,tot=DCS.map(d=>Math.max(1,sum(L.filter(l=>l.dc===d.id).map(wOf))));
   let gaps=wg;DCS.forEach((d,i)=>{if(i)gaps+=d.wp!==DCS[i-1].wp?wg:dg;});
   const k=(bot-top-gaps)/sum(tot);
   let y=top+wg;const dy=[];
@@ -189,7 +211,7 @@ function buildCols(){
   out+=`<g>${ribs.join('')}</g>`;
   // DC boxes + WP labels
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=dcTextColor(col);
-    out+=`<g class="node" data-dc="${d.id}"><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
+    out+=`<g class="node" data-dc="${d.id}"${fade(L,d)}><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
       `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan>${hasHost()?'':`<tspan dx="7">${esc(hostOf(d))}</tspan>`}</text></g>`;});
   if(O.showWP)WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
     out+=`<text x="0" y="${f(dy[i][0]-11)}" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="700" fill="${wp.color}">${esc(wp.name)}</text>`;});
@@ -200,7 +222,8 @@ function buildCols(){
     out+=`<text class="node" data-pt="${p.id}" x="${f(lx)}" y="${f(ly)}" transform="rotate(${f(m*180/Math.PI+(left?90:-90))} ${f(lx)} ${f(ly)})" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="17" fill="${p.tbd?'#5D666E':'#1E2328'}"${p.tbd?' font-style="italic"':''}>${esc(p.name)}</text>`;});
   // side brackets + headings
   const rp=Ri+TRK+78+P;
-  [['acad',{both:'Academic partners',host:'Host institutions',sec:'Academic secondments'}[O.links]],['ind','Industrial secondments']].forEach(([type,txt])=>{
+  const only=k=>['host','sec','train'].every(x=>O.show[x]===(x===k));
+  [['acad',only('host')?'Host institutions':only('sec')?'Academic secondments':'Academic partners'],['ind',only('sec')?'Industrial secondments':'Industrial partners']].forEach(([type,txt])=>{
     if(!span[type])return;const [a0,a1]=span[type],c=TYPES[type].color;
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
   out+=legend(-600-P,597);
@@ -237,8 +260,8 @@ function buildCirc(){
   out+=`<g>${ribs.join('')}</g>`;
   // DC blocks
   DCS.forEach((d,i)=>{const [a0,a1]=pa[i],col=dcColor(d);
-    out+=`<path class="node" data-dc="${d.id}" d="${annulus(a0,a1,R,R+PT)}" fill="${col}"/>`;
-    out+=`<g class="node" data-dc="${d.id}">`+arcText('cc'+i,a0,a1,R+PT/2+(isFlip(a0,a1)?4.5:-4.5),d.code,`font-size="13" font-weight="700" fill="${dcTextColor(col)}"`)+'</g>';});
+    out+=`<path class="node" data-dc="${d.id}" d="${annulus(a0,a1,R,R+PT)}" fill="${col}"${fade(L,d)}/>`;
+    out+=`<g class="node" data-dc="${d.id}"${fade(L,d)}>`+arcText('cc'+i,a0,a1,R+PT/2+(isFlip(a0,a1)?4.5:-4.5),d.code,`font-size="13" font-weight="700" fill="${dcTextColor(col)}"`)+'</g>';});
   const rb=R+PT+42;
   if(O.showWP)WPS.forEach((wp,k)=>{const idx=DCS.map((d,i)=>d.wp===wp.id?i:-1).filter(i=>i>=0);const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
     out+=`<path d="${annulus(a0,a1,rb,rb+4)}" fill="${wp.color}"/>`+arcText('cw'+k,a0,a1,isFlip(a0,a1)?rb-8:rb-25,wp.name,`font-size="24" font-weight="500" fill="${wp.color}"`);});
@@ -252,7 +275,7 @@ function buildCirc(){
     const a0=qa[idx[0]][0],a1=qa[idx[idx.length-1]][1];
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${t.color}"/>`+arcText('ct'+k,a0,a1,isFlip(a0,a1)?rp+28:rp+10,t.name,`font-size="24" font-weight="500" fill="${t.color}"`);});
   out+=arcText('chl',P0,P1,rb+22,'Doctoral candidates',`font-size="46" font-weight="700" fill="#6B4FA0"`);
-  out+=arcText('chr',rad(20),rad(160),rp+52,{both:'Hosts & secondments',host:'Host institutions',sec:'Secondments'}[O.links],`font-size="40" font-weight="700" fill="#6B4FA0"`);
+  out+=arcText('chr',rad(20),rad(160),rp+52,linkTitle(),`font-size="40" font-weight="700" fill="#6B4FA0"`);
   out+=legend(-540,530);
   if(O.showKey)out+=expKey(v[0]+40,CV+10,v[2]-80);
   return out;
@@ -267,7 +290,7 @@ function draw(){
   fig.setAttribute('viewBox',vb().join(' '));fig.style.maxWidth=O.layout==='circ'?'900px':'1000px';
   fig.innerHTML=build();
   document.querySelectorAll('[data-color]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===O.colorBy));
-  document.querySelectorAll('[data-links]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.links===O.links));
+  document.querySelectorAll('[data-show]').forEach(b=>b.setAttribute('aria-pressed',!!O.show[b.dataset.show]));
   document.getElementById('optLegend').checked=O.showLegend;
   document.getElementById('optIcons').checked=O.showIcons;
   document.getElementById('optKey').checked=O.showKey;
@@ -277,7 +300,9 @@ function draw(){
 }
 const set=(k,v)=>{O[k]=v;saveOpts();draw();};
 document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>set('colorBy',b.dataset.color)));
-document.querySelectorAll('[data-links]').forEach(b=>b.addEventListener('click',()=>set('links',b.dataset.links)));
+// link types toggle independently; at least one stays on
+document.querySelectorAll('[data-show]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.show,n={...O.show,[k]:!O.show[k]};if(Object.values(n).some(Boolean))set('show',n);}));
 document.getElementById('optLegend').addEventListener('change',e=>set('showLegend',e.target.checked));
 document.getElementById('optIcons').addEventListener('change',e=>set('showIcons',e.target.checked));
 document.getElementById('optKey').addEventListener('change',e=>set('showKey',e.target.checked));
@@ -296,11 +321,11 @@ fig.addEventListener('mouseover',e=>{
   if(el.classList.contains('rib')){
     const d=dcById(el.dataset.dc),p=ptById(el.dataset.pt),l=L.find(x=>x.dc===d.id&&x.pt===p.id&&x.kind===el.dataset.kind);
     el.classList.add('on');on(`.node[data-dc="${d.id}"],.node[data-pt="${p.id}"]`);
-    html=`<b>${esc(d.code)}</b> ${esc(d.title)} → <b>${fullName(p)}</b><br>${kindName(l.kind)} · ${esc(l.exp)}`;
+    html=`<b>${esc(d.code)}</b> ${esc(d.title)} → <b>${fullName(p)}</b><br>${kindName(l.kind)}${l.exp?' · '+esc(l.exp):''}`;
   }else if(el.dataset.dc){
     const d=dcById(el.dataset.dc),ls=L.filter(x=>x.dc===d.id);
     on(`[data-dc="${d.id}"]`);ls.forEach(x=>on(`.node[data-pt="${x.pt}"]`));
-    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+(hasHost()?'':`<br>Host institution: <b>${esc(hostOf(d))}</b>`)+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(x.pt)}</b> (${esc(x.exp)})`).join('');
+    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+(hasHost()?'':`<br>Host institution: <b>${esc(hostOf(d))}</b>`)+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(x.pt)}</b>${x.exp?` (${esc(x.exp)})`:''}`).join('');
   }else{
     const p=ptById(el.dataset.pt),ls=L.filter(x=>x.pt===p.id);
     on(`[data-pt="${p.id}"]`);ls.forEach(x=>on(`.node[data-dc="${x.dc}"]`));
