@@ -1,16 +1,16 @@
 (function(){
 /* ---------- data (from Table_v3.xlsx) ---------- */
 // [DC, [host, expertise], [[academic secondment, expertise], ...], [industrial secondment, expertise],
-//  [[training partner, expertise ('' if not given), 'acad'|'ind'], ...]]
+//  [[training partner, expertise ('' if not given)], ...]]
 const TABLE=[
-["DC1", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"], [["INAF", "", "acad"]]],
+["DC1", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"], [["INAF", ""]]],
 ["DC2", ["UniNA", "Organic chemistry"], [["UCC", "Spectroscopy"]], ["AV", "Immunology"], []],
-["DC3", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], [["MT", "", "ind"]]],
-["DC4", ["UDG", "Computational chemistry"], [["KCL", "Computational chemistry"]], ["ME", "Radioprotection"], [["UL", "", "ind"]]],
+["DC3", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], [["MT", ""]]],
+["DC4", ["UDG", "Computational chemistry"], [["KCL", "Computational chemistry"]], ["ME", "Radioprotection"], [["UL", ""]]],
 ["DC5", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], []],
-["DC6", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "", "acad"]]],
-["DC7", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "", "acad"]]],
-["DC8", ["LU", "Cell biology"], [["UR", "Phylogenetics"]], ["BG", "Stimuli-responsive polymers"], [["UniNA", "Organic chemistry", "acad"], ["UCC", "Spectroscopy", "acad"]]],
+["DC6", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", ""]]],
+["DC7", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", ""]]],
+["DC8", ["LU", "Cell biology"], [["UR", "Phylogenetics"]], ["BG", "Stimuli-responsive polymers"], [["UniNA", "Organic chemistry"], ["UCC", "Spectroscopy"]]],
 ["DC9", ["UniNA", "Biochemistry"], [["UNIL", "Phylogenomic evolution"]], ["FIB", "Material chemistry"], []],
 ["DC10", ["UGent", "Cell biology"], [["UniNA", "Organic chemistry"]], ["ME", "Radioprotection"], []],
 ["DC11", ["UGent", "Organismal biology"], [["TUE", "Biofabrication"]], ["ME", "Radioprotection"], []],
@@ -30,7 +30,7 @@ const WPS=[
 const FULL_NAMES={};
 const HOST_WEIGHT=2, SEC_WEIGHT=1; // training interactions are drawn at secondment width
 
-const TYPES={acad:{name:'Academic',color:'#005392'},ind:{name:'Industrial',color:'#DC7E65'}};
+const TYPES={acad:{name:'Academic',color:'#005392'},ind:{name:'Industrial',color:'#DC7E65'},train:{name:'Training',color:'#4E9A7A'}};
 const KINDS={host:{name:'Host institution',color:'#005392'},acad:{name:'Academic secondment',color:'#D4C35A'},ind:{name:'Industrial secondment',color:'#DC7E65'},train:{name:'Training interaction',color:'#4E9A7A'}};
 const TBD_COLOR='#B5BBBF';
 
@@ -64,11 +64,11 @@ TABLE.forEach(r=>{
   ALL.push({dc:r[0],pt:r[1][0],kind:'host',exp:r[1][1]});
   r[2].forEach(s=>ALL.push({dc:r[0],pt:s[0],kind:'acad',exp:s[1]}));
   if(r[3]&&r[3][0])ALL.push({dc:r[0],pt:r[3][0],kind:'ind',exp:r[3][1]});
-  (r[4]||[]).forEach(t=>ALL.push({dc:r[0],pt:t[0],kind:'train',exp:t[1],type:t[2]}));
+  // training partners form their own group, so an institution can appear both there and as an academic partner
+  (r[4]||[]).forEach(t=>ALL.push({dc:r[0],pt:'train:'+t[0],kind:'train',exp:t[1]}));
 });
 const PARTNERS=[];
-// a partner sits on the academic or industrial side by its first link (training rows carry their own category)
-ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.type||(l.kind==='ind'?'ind':'acad'),name:l.pt,tbd:l.pt==='TBD'});});
+ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.kind==='host'?'acad':l.kind,name:l.pt.replace(/^train:/,''),tbd:l.pt==='TBD'});});
 
 /* ---------- options ---------- */
 // each page fixes its layout with <body data-layout="cols|circ">
@@ -103,7 +103,7 @@ const hostOf=d=>(ALL.find(l=>l.dc===d.id&&l.kind==='host')||{}).pt||'';
 const fade=(L,d)=>L.some(l=>l.dc===d.id)?'':' opacity="0.3"';
 const wOf=l=>l.kind==='host'?HOST_WEIGHT:SEC_WEIGHT;
 const links=()=>ALL.filter(l=>shown(l.kind));
-const fullName=p=>FULL_NAMES[p.id]?`${esc(p.id)} · ${esc(FULL_NAMES[p.id])}`:esc(p.tbd?'Industrial partner to be confirmed':p.id);
+const fullName=p=>FULL_NAMES[p.name]?`${esc(p.name)} · ${esc(FULL_NAMES[p.name])}`:esc(p.tbd?'Industrial partner to be confirmed':p.name);
 
 // order partners by the mean position of the DCs they link to, so ribbons cross as little as possible
 function partnerOrder(L,type){
@@ -174,8 +174,10 @@ function buildCols(){
   // with hosts hidden, each box also names the DC's host, so the boxes widen to fit
   const L=links(),Ri=440,TRK=22,bx=hasHost()?45:85,top=-370,bot=370,P=iconPad(),v=vb();
   let out=`<rect x="${v[0]}" y="${v[1]}" width="${v[2]}" height="${v[3]}" fill="#FFFFFF"/>`;
-  const order={acad:partnerOrder(L,'acad'),ind:partnerOrder(L,'ind')};
-  const pos=new Map();[...order.acad,...order.ind].forEach((p,i)=>pos.set(p.id,i));
+  // academic partners on the left; training partners above industrial partners on the right
+  const order={acad:partnerOrder(L,'acad'),train:partnerOrder(L,'train'),ind:partnerOrder(L,'ind')};
+  const side=t=>t==='acad'?'L':'R';
+  const pos=new Map();[...order.acad,...order.train,...order.ind].forEach((p,i)=>pos.set(p.id,i));
   // centre column: box height by total link weight; a DC with no links shown keeps a small faded box
   const dg=8,wg=34,tot=DCS.map(d=>Math.max(1,sum(L.filter(l=>l.dc===d.id).map(wOf))));
   let gaps=wg;DCS.forEach((d,i)=>{if(i)gaps+=d.wp!==DCS[i-1].wp?wg:dg;});
@@ -185,23 +187,25 @@ function buildCols(){
   // partner arcs: same width scale as the boxes, centred on 270° (left) and 90° (right)
   const ptot=p=>sum(L.filter(l=>l.pt===p.id).map(wOf));
   const pa=new Map(),span={};
-  Object.entries(order).forEach(([type,ps])=>{
-    if(!ps.length)return;
-    const len=sum(ps.map(p=>ptot(p)*k))/Ri,maxSpan=rad(type==='acad'?112:92);
-    const g=Math.min(rad(9),(maxSpan-len)/Math.max(1,ps.length-1)),all=len+g*(ps.length-1);
+  const SIDES=[{types:['acad'],c:rad(270),dir:-1,max:rad(112)},{types:['train','ind'],c:rad(90),dir:1,max:rad(112)}],GG=rad(13);
+  SIDES.forEach(S=>{
+    const groups=S.types.map(t=>order[t]).filter(g=>g.length);if(!groups.length)return;
+    const ps=groups.flat(),len=sum(ps.map(p=>ptot(p)*k))/Ri,n=ps.length-groups.length,G=GG*(groups.length-1);
+    const g=Math.min(rad(9),(S.max-len-G)/Math.max(1,n)),all=len+g*n+G;
     // left side runs top→bottom with decreasing angle, right side with increasing angle
-    const dir=type==='acad'?-1:1,c=type==='acad'?rad(270):rad(90);let a=c-dir*all/2;
-    ps.forEach(p=>{const w=ptot(p)*k/Ri;pa.set(p.id,dir>0?[a,a+w]:[a-w,a]);a+=dir*(w+g);});
-    span[type]=dir>0?[c-all/2,c+all/2]:[c-all/2,c+all/2];
+    let a=S.c-S.dir*all/2;
+    groups.forEach((grp,gi)=>{if(gi)a+=S.dir*GG;const st=a;
+      grp.forEach((p,j)=>{if(j)a+=S.dir*g;const w=ptot(p)*k/Ri;pa.set(p.id,S.dir>0?[a,a+w]:[a-w,a]);a+=S.dir*w;});
+      span[grp[0].type]=groups.length===1?[S.c-all/2,S.c+all/2]:S.dir>0?[st,a]:[a,st];});
   });
   // ribbons
-  const cur=new Map([...pa].map(([id,v])=>[id,ptById(id).type==='acad'?v[1]:v[0]]));
+  const cur=new Map([...pa].map(([id,v])=>[id,side(ptById(id).type)==='L'?v[1]:v[0]]));
   const ribs=[];
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i];
-    ['acad','ind'].forEach(side=>{
-      const ls=L.filter(l=>l.dc===d.id&&ptById(l.pt).type===side).sort((a,b)=>pos.get(a.pt)-pos.get(b.pt));
+    ['L','R'].forEach(sd=>{
+      const ls=L.filter(l=>l.dc===d.id&&side(ptById(l.pt).type)===sd).sort((a,b)=>pos.get(a.pt)-pos.get(b.pt));
       const h=sum(ls.map(wOf))*k;let s=(y0+y1-h)/2;
-      const left=side==='acad',x=left?-bx:bx,dx=left?-150:150;
+      const left=sd==='L',x=left?-bx:bx,dx=left?-150:150;
       ls.forEach(l=>{const w=wOf(l)*k,aw=w/Ri,t0=cur.get(l.pt),t1=left?t0-aw:t0+aw;cur.set(l.pt,t1);
         const p0=pt(t0,Ri-2),p1=pt(t1,Ri-2),c0=pt(t0,Ri-170),c1=pt(t1,Ri-170);
         ribs.push(`<path ${ribAttrs(l)} d="M${x},${f(s)}C${x+dx},${f(s)} ${f(c0[0])},${f(c0[1])} ${f(p0[0])},${f(p0[1])}`+
@@ -217,15 +221,15 @@ function buildCols(){
     out+=`<text x="0" y="${f(dy[i][0]-11)}" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="700" fill="${wp.color}">${esc(wp.name)}</text>`;});
   out+=`<text x="0" y="${top-38}" text-anchor="middle" font-family="${FONT}" font-size="32" font-weight="700" fill="#6B4FA0">Doctoral candidates</text>`;
   // partner arcs with radial labels
-  PARTNERS.filter(p=>pa.has(p.id)).forEach(p=>{const [a0,a1]=pa.get(p.id),m=(a0+a1)/2,left=p.type==='acad',[lx,ly]=pt(m,Ri+TRK+8+P);
+  PARTNERS.filter(p=>pa.has(p.id)).forEach(p=>{const [a0,a1]=pa.get(p.id),m=(a0+a1)/2,left=side(p.type)==='L',[lx,ly]=pt(m,Ri+TRK+8+P);
     out+=`<path class="node" data-pt="${p.id}" d="${annulus(a0,a1,Ri,Ri+TRK)}" fill="${ptColor(p)}"/>`+ptIcons(L,p,m,Ri+TRK+4);
     out+=`<text class="node" data-pt="${p.id}" x="${f(lx)}" y="${f(ly)}" transform="rotate(${f(m*180/Math.PI+(left?90:-90))} ${f(lx)} ${f(ly)})" text-anchor="${left?'end':'start'}" dominant-baseline="central" font-family="${FONT}" font-size="17" fill="${p.tbd?'#5D666E':'#1E2328'}"${p.tbd?' font-style="italic"':''}>${esc(p.name)}</text>`;});
   // side brackets + headings
   const rp=Ri+TRK+78+P;
   const only=k=>['host','sec','train'].every(x=>O.show[x]===(x===k));
-  [['acad',only('host')?'Host institutions':only('sec')?'Academic secondments':'Academic partners'],['ind',only('sec')?'Industrial secondments':'Industrial partners']].forEach(([type,txt])=>{
+  [['acad',only('host')?'Host institutions':only('sec')?'Academic secondments':'Academic partners'],['ind',only('sec')?'Industrial secondments':'Industrial partners'],['train','Training']].forEach(([type,txt])=>{
     if(!span[type])return;const [a0,a1]=span[type],c=TYPES[type].color;
-    out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
+    out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),isFlip(a0-rad(15),a1+rad(15))?rp+44:rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
   out+=legend(-600-P,597);
   if(O.showKey)out+=expKey(v[0]+40,CB+10,v[2]-80);
   return out;
@@ -242,7 +246,7 @@ function buildCirc(){
   const kp=(P1-P0-gaps)/DCS.length;let a=P0;const pa=[];
   DCS.forEach((d,i)=>{if(i)a+=d.wp!==DCS[i-1].wp?wg:dg;pa.push([a,a+kp]);a+=kp;});
   // partners top to bottom: academic then industrial; within each, later DCs higher up
-  const ps=[...partnerOrder(L,'acad').reverse(),...partnerOrder(L,'ind').filter(p=>!p.tbd).reverse(),...partnerOrder(L,'ind').filter(p=>p.tbd)];
+  const ps=[...partnerOrder(L,'acad').reverse(),...partnerOrder(L,'train').reverse(),...partnerOrder(L,'ind').filter(p=>!p.tbd).reverse(),...partnerOrder(L,'ind').filter(p=>p.tbd)];
   const pos=new Map(ps.map((p,i)=>[p.id,i]));
   const ptot=ps.map(p=>sum(L.filter(l=>l.pt===p.id).map(wOf)));
   const T0=rad(16),T1=rad(164),qg=rad(2.2),tg=rad(7);
@@ -325,7 +329,7 @@ fig.addEventListener('mouseover',e=>{
   }else if(el.dataset.dc){
     const d=dcById(el.dataset.dc),ls=L.filter(x=>x.dc===d.id);
     on(`[data-dc="${d.id}"]`);ls.forEach(x=>on(`.node[data-pt="${x.pt}"]`));
-    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+(hasHost()?'':`<br>Host institution: <b>${esc(hostOf(d))}</b>`)+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(x.pt)}</b>${x.exp?` (${esc(x.exp)})`:''}`).join('');
+    html=`<b>${esc(d.code)}</b> ${esc(d.title)}`+(hasHost()?'':`<br>Host institution: <b>${esc(hostOf(d))}</b>`)+ls.map(x=>`<br>${kindName(x.kind)}: <b>${esc(ptById(x.pt).name)}</b>${x.exp?` (${esc(x.exp)})`:''}`).join('');
   }else{
     const p=ptById(el.dataset.pt),ls=L.filter(x=>x.pt===p.id);
     on(`[data-pt="${p.id}"]`);ls.forEach(x=>on(`.node[data-dc="${x.dc}"]`));
