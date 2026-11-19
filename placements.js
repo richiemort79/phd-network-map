@@ -190,12 +190,13 @@ function buildCols(){
   const order={acad:partnerOrder(L,'acad'),train:partnerOrder(L,'train'),ind:partnerOrder(L,'ind')};
   const side=t=>t==='acad'?'L':'R';
   const pos=new Map();[...order.acad,...order.train,...order.ind].forEach((p,i)=>pos.set(p.id,i));
-  // centre column: box height by total link weight; a DC with no links shown keeps a small faded box
+  // centre column: every DC box the same height; a DC with no links shown is faded
   const dg=8,wg=34,tot=DCS.map(d=>Math.max(1,sum(L.filter(l=>l.dc===d.id).map(wOf))));
   let gaps=wg;DCS.forEach((d,i)=>{if(i)gaps+=d.wp!==DCS[i-1].wp?wg:dg;});
-  const k=(bot-top-gaps)/sum(tot);
+  // k sets the partner arc widths; bh is the shared box height
+  const k=(bot-top-gaps)/sum(tot),bh=(bot-top-gaps)/DCS.length;
   let y=top+wg;const dy=[];
-  DCS.forEach((d,i)=>{if(i)y+=d.wp!==DCS[i-1].wp?wg:dg;dy.push([y,y+tot[i]*k]);y+=tot[i]*k;});
+  DCS.forEach((d,i)=>{if(i)y+=d.wp!==DCS[i-1].wp?wg:dg;dy.push([y,y+bh]);y+=bh;});
   // partner arcs: same width scale as the boxes, centred on 270° (left) and 90° (right)
   const ptot=p=>sum(L.filter(l=>l.pt===p.id).map(wOf));
   const pa=new Map(),span={};
@@ -214,15 +215,18 @@ function buildCols(){
   const cur=new Map([...pa].map(([id,v])=>[id,side(ptById(id).type)==='L'?v[1]:v[0]]));
   const ribs=[];
   DCS.forEach((d,i)=>{const [y0,y1]=dy[i];
+    // ribbons are rescaled at the box end so the busier side fills the box; they keep weight × k at the arcs
+    const sideW=sd=>sum(L.filter(l=>l.dc===d.id&&side(ptById(l.pt).type)===sd).map(wOf));
+    const ks=bh/Math.max(1,sideW('L'),sideW('R'));
     ['L','R'].forEach(sd=>{
       const ls=L.filter(l=>l.dc===d.id&&side(ptById(l.pt).type)===sd).sort((a,b)=>pos.get(a.pt)-pos.get(b.pt));
-      const h=sum(ls.map(wOf))*k;let s=(y0+y1-h)/2;
+      const h=sum(ls.map(wOf))*ks;let s=(y0+y1-h)/2;
       const left=sd==='L',x=left?-bx:bx,dx=left?-150:150;
-      ls.forEach(l=>{const w=wOf(l)*k,aw=w/Ri,t0=cur.get(l.pt),t1=left?t0-aw:t0+aw;cur.set(l.pt,t1);
+      ls.forEach(l=>{const w=wOf(l)*k,wb=wOf(l)*ks,aw=w/Ri,t0=cur.get(l.pt),t1=left?t0-aw:t0+aw;cur.set(l.pt,t1);
         const p0=pt(t0,Ri-2),p1=pt(t1,Ri-2),c0=pt(t0,Ri-170),c1=pt(t1,Ri-170);
         ribs.push(`<path ${ribAttrs(l)} d="M${x},${f(s)}C${x+dx},${f(s)} ${f(c0[0])},${f(c0[1])} ${f(p0[0])},${f(p0[1])}`+
-          `A${Ri-2},${Ri-2} 0 0 ${left?0:1} ${f(p1[0])},${f(p1[1])}C${f(c1[0])},${f(c1[1])} ${x+dx},${f(s+w)} ${x},${f(s+w)}Z"/>`);
-        s+=w;});
+          `A${Ri-2},${Ri-2} 0 0 ${left?0:1} ${f(p1[0])},${f(p1[1])}C${f(c1[0])},${f(c1[1])} ${x+dx},${f(s+wb)} ${x},${f(s+wb)}Z"/>`);
+        s+=wb;});
     });});
   out+=`<g>${ribs.join('')}</g>`;
   // DC boxes + WP labels
