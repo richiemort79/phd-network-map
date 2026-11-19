@@ -10,7 +10,7 @@ const TABLE=[
 ["DC5", ["KCL", "Computational chemistry"], [["UDG", "Computational chemistry"]], ["SA", "Software development"], [["UL", "Computational chemistry"]]],
 ["DC6", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "Phylogenetics"]]],
 ["DC7", ["UCC", "Spectroscopy"], [["UGent", "Microscopy"]], ["PE", "Organic chemistry"], [["UCMZ", "Phylogenetics"]]],
-["DC8", ["LU", "Cell biology"], [["UR", "Phylogenetics"]], ["BG", "Stimuli-responsive polymers"], [["UniNA", "Organic chemistry"], ["UCC", "Spectroscopy"]]],
+["DC8", ["LU", "Cell biology"], [["UR", "Archaeal isolates"]], ["BG", "Stimuli-responsive polymers"], [["UniNA", "Organic chemistry"], ["UCC", "Spectroscopy"]]],
 ["DC9", ["UniNA", "Biochemistry"], [["UNIL", "Phylogenomic evolution"]], ["FIB", "Material chemistry"], []],
 ["DC10", ["UGent", "Cell biology"], [["UniNA", "Organic chemistry"]], ["ME", "Radioprotection"], [["MT", "Radioprotection"]]],
 ["DC11", ["UGent", "Organismal biology"], [["TUE", "Biofabrication"]], ["ME", "Radioprotection"], [["MT", "Radioprotection"]]],
@@ -54,6 +54,7 @@ const ICONS={
   'Organismal biology':'<path d="M-9 0c4-6 10-6 14 0-4 6-10 6-14 0zM5 0l4-4v8z"/><path d="M-5-1h.1"/>',
   'Evolutionary ecology':'<path d="M-8 9C-9-3-1-9 9-9 9 2 3 9-8 9zM-8 9 3-2"/>',
   'Avian ecology':'<path d="M-10-2q5-6 10 1 5-7 10-1M-6 7h12"/>',
+  'Archaeal isolates':'<path d="M-9-1c0-4 3-6 6-5s5 2 5 6-3 6-6 5-5-2-5-6zM2 0q2-4 4 0t4 0M-7-6l-2-2m2 10-2 2m5-11v-3"/>',
   'TBD':'<path d="M-4-4a4 4 0 1 1 7 3C2 0 0 1 0 3M0 7h.1"/>'
 };
 const ICON_STEP=26, KEY_ROW=34, KEY_COLS=3;
