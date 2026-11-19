@@ -57,7 +57,7 @@ const ICONS={
   'Archaeal isolates':'<path d="M-9-1c0-4 3-6 6-5s5 2 5 6-3 6-6 5-5-2-5-6zM2 0q2-4 4 0t4 0M-7-6l-2-2m2 10-2 2m5-11v-3"/>',
   'TBD':'<path d="M-4-4a4 4 0 1 1 7 3C2 0 0 1 0 3M0 7h.1"/>'
 };
-const ICON_STEP=26, KEY_ROW=34, KEY_COLS=3;
+const ICON_STEP=26, KEY_ROW=27, KEY_COLW=225;
 
 const DCS=TABLE.map((r,i)=>({id:r[0],code:r[0],title:TITLES[i]||'',wp:WPS.find(w=>w.dcs.includes(i+1)).id}));
 const ALL=[];
@@ -143,31 +143,36 @@ function circPad(){if(!O.showIcons)return 0;const L=links(),ps=PARTNERS.filter(p
   const w=ps.map(p=>textW(p.name,15)),wi=ps.map((p,i)=>w[i]+(ptExps(L,p.id).length?10+ptExps(L,p.id).length*ICON_GAP:0));
   return Math.max(0,Math.max(...wi)-Math.max(...w));}
 function keyExps(){const s=[];links().forEach(l=>{if(l.exp&&!s.includes(l.exp))s.push(l.exp);});return s.sort((a,b)=>(a==='TBD')-(b==='TBD')||a.localeCompare(b));}
-const keyH=()=>O.showKey?80+Math.ceil(keyExps().length/KEY_COLS)*KEY_ROW:0;
+// expertise key: a wide, shallow block with as many columns as the figure width allows
+const keyW=()=>vbBase()[2]-80;
+const keyCols=w=>Math.max(3,Math.floor(w/KEY_COLW));
+const keyH=()=>O.showKey?62+Math.ceil(keyExps().length/keyCols(keyW()))*KEY_ROW:0;
 function expKey(x0,y0,w){
-  const ex=keyExps(),rows=Math.ceil(ex.length/KEY_COLS),cw=w/KEY_COLS;
-  let out=`<path d="M${f(x0)},${f(y0)}H${f(x0+w)}" stroke="#D5DAD7" fill="none"/><text x="${f(x0)}" y="${f(y0+38)}" font-family="${FONT}" font-size="22" font-weight="700" fill="#1E2328">Expertise</text>`;
-  ex.forEach((e,i)=>{const x=x0+Math.floor(i/rows)*cw+12,y=y0+76+(i%rows)*KEY_ROW;
-    out+=icon(x,y,e)+`<text x="${f(x+22)}" y="${f(y)}" dominant-baseline="central" font-family="${FONT}" font-size="16" fill="#1E2328">${esc(e==='TBD'?'To be confirmed':e)}</text>`;});
+  const ex=keyExps(),cols=keyCols(w),rows=Math.ceil(ex.length/cols),cw=w/cols;
+  let out=`<path d="M${f(x0)},${f(y0)}H${f(x0+w)}" stroke="#D5DAD7" fill="none"/><text x="${f(x0)}" y="${f(y0+32)}" font-family="${FONT}" font-size="20" font-weight="700" fill="#1E2328">Expertise</text>`;
+  ex.forEach((e,i)=>{const x=x0+Math.floor(i/rows)*cw+12,y=y0+60+(i%rows)*KEY_ROW;
+    out+=icon(x,y,e)+`<text x="${f(x+20)}" y="${f(y)}" dominant-baseline="central" font-family="${FONT}" font-size="14.5" fill="#1E2328">${esc(e==='TBD'?'To be confirmed':e)}</text>`;});
   return out;
 }
 
-// legend block anchored at its bottom line (yb): optional work package key, colour swatches, ribbon-width note
+// rows of a key block; {y}/{y-11} are filled in once the block's position is known
+const swatchRow=(rows,x,c,t)=>rows.push(`<rect x="${x}" y="{y-11}" width="15" height="15" rx="2" fill="${c}"/><text x="${x+23}" y="{y}">${esc(t)}</text>`);
+const placeRows=(rows,y0,dy=23,size=15)=>rows.length?`<g font-family="${FONT}" font-size="${size}" fill="#1E2328">`+rows.map((r,i)=>r.replace(/\{y(-11)?\}/g,(m,d)=>f(y0+i*dy+(d?-11:0)))).join('')+'</g>':'';
+// work package key, anchored at its top line (yt) in the figure's top-left corner
+function wpKey(x,yt){
+  if(!O.showWPKey)return '';const rows=[`<text x="${x}" y="{y}" font-weight="700">Work packages</text>`];
+  WPS.forEach(w=>swatchRow(rows,x,w.color,`${w.name} · DC${w.dcs[0]}–DC${w.dcs[w.dcs.length-1]}`));
+  return placeRows(rows,yt,21,14);
+}
+// ribbon legend anchored at its bottom line (yb): colour swatches and the ribbon-width note
 function legend(x,yb){
-  const rows=[],sw=(c,t)=>rows.push(`<rect x="${x}" y="{y-11}" width="15" height="15" rx="2" fill="${c}"/><text x="${x+23}" y="{y}">${esc(t)}</text>`);
-  if(O.showWPKey){
-    rows.push(`<text x="${x}" y="{y}" font-weight="700">Work packages</text>`);
-    WPS.forEach(w=>sw(w.color,`${w.name} · DC${w.dcs[0]}–DC${w.dcs[w.dcs.length-1]}`));
-  }
+  const rows=[],sw=(c,t)=>swatchRow(rows,x,c,t);
   if(O.showLegend){
-    if(O.colorBy==='kind'&&O.showWPKey)rows.push(`<text x="${x}" y="{y}" font-weight="700">Ribbons</text>`);
     if(O.colorBy==='kind')Object.entries(KINDS).filter(([k])=>shown(k)).forEach(([,k])=>sw(k.color,k.name));
     else if(O.colorBy==='wp'&&!O.showWPKey)WPS.forEach(w=>sw(w.color,w.name));
     rows.push(`<text x="${x}" y="{y}" fill="#5D666E" font-size="13.5">${widthNote()}</text>`);
   }
-  if(!rows.length)return '';
-  const y0=yb-(rows.length-1)*23;
-  return `<g font-family="${FONT}" font-size="15" fill="#1E2328">`+rows.map((r,i)=>r.replace(/\{y(-11)?\}/g,(m,d)=>f(y0+i*23+(d?-11:0)))).join('')+'</g>';
+  return placeRows(rows,yb-(rows.length-1)*23);
 }
 
 function widthNote(){
@@ -181,7 +186,7 @@ const linkTitle=()=>{const p=[hasHost()&&'Hosts',hasSec()&&'secondments',hasTrai
   const t=p.length>1?p.slice(0,-1).join(', ')+' & '+p[p.length-1]:p[0]||'';return t.charAt(0).toUpperCase()+t.slice(1);};
 
 /* ---------- DCs in the centre, partners on arcs either side ---------- */
-const CB=620;
+const CB=620,CBOT=560; // half-width and bottom edge of the centre figure
 function buildCols(){
   // with hosts hidden, each box also names the DC's host, so the boxes widen to fit
   const L=links(),Ri=440,TRK=22,bx=hasHost()?45:85,top=-370,bot=370,v=vb();
@@ -246,8 +251,8 @@ function buildCols(){
   [['acad',only('host')?'Host institutions':only('sec')?'Academic secondments':'Academic partners'],['ind',only('sec')?'Industrial secondments':'Industrial partners'],['train','Training']].forEach(([type,txt])=>{
     if(!span[type])return;const [a0,a1]=span[type],c=TYPES[type].color;
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${c}"/>`+arcText('cs'+type,a0-rad(15),a1+rad(15),isFlip(a0-rad(15),a1+rad(15))?rp+44:rp+14,txt,`font-size="40" font-weight="700" fill="${c}"`);});
-  out+=legend(-600,597);
-  if(O.showKey)out+=expKey(v[0]+40,CB+10,v[2]-80);
+  out+=wpKey(-CB+10,-494)+legend(-600,CBOT-20);
+  if(O.showKey)out+=expKey(v[0]+40,CBOT+10,keyW());
   return out;
 }
 
@@ -296,15 +301,15 @@ function buildCirc(){
     out+=`<path d="${annulus(a0,a1,rp,rp+4)}" fill="${t.color}"/>`+arcText('ct'+k,a0,a1,isFlip(a0,a1)?rp+28:rp+10,t.name,`font-size="24" font-weight="500" fill="${t.color}"`);});
   out+=arcText('chl',P0,P1,rb+22,'Doctoral candidates',`font-size="46" font-weight="700" fill="#6B4FA0"`);
   out+=arcText('chr',rad(20),rad(160),rp+52,linkTitle(),`font-size="40" font-weight="700" fill="#6B4FA0"`);
-  out+=legend(-540,530);
-  if(O.showKey)out+=expKey(v[0]+40,CV+10,v[2]-80);
+  out+=wpKey(-CV+20,-CV+30)+legend(-540,530);
+  if(O.showKey)out+=expKey(v[0]+40,CV+10,keyW());
   return out;
 }
 
 /* ---------- render ---------- */
 const fig=document.getElementById('fig');
-const vb=()=>{const K=O.showKey?keyH()+10:0;
-  return O.layout==='cols'?[-CB,-510,2*CB,510+CB+K]:[-CV,-CV,2*CV+circPad(),2*CV+K];};
+const vbBase=()=>O.layout==='cols'?[-CB,-510,2*CB,510+CBOT]:[-CV,-CV,2*CV+circPad(),2*CV];
+const vb=()=>{const v=vbBase();if(O.showKey)v[3]+=keyH()+10;return v;};
 const build=()=>O.layout==='cols'?buildCols():buildCirc();
 function draw(){
   fig.setAttribute('viewBox',vb().join(' '));fig.style.maxWidth=O.layout==='circ'?'900px':'1000px';
