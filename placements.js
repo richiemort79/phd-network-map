@@ -67,7 +67,7 @@ ALL.forEach(l=>{if(!PARTNERS.some(p=>p.id===l.pt))PARTNERS.push({id:l.pt,type:l.
 // each page fixes its layout with <body data-layout="cols|circ">
 const LAYOUT=document.body.dataset.layout==='circ'?'circ':'cols';
 const KEY='phd-placement-map-'+LAYOUT;
-const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true,showWPKey:false};
+const O={colorBy:'wp',links:'both',showLegend:true,showIcons:false,showKey:false,showWP:true,showWPKey:false,dcText:'auto'};
 try{Object.assign(O,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
 O.layout=LAYOUT;
 const hasHost=()=>O.links!=='sec', hasSec=()=>O.links!=='host';
@@ -86,6 +86,8 @@ const dcById=id=>DCS.find(d=>d.id===id), ptById=id=>PARTNERS.find(p=>p.id===id);
 function dcColor(dc){const l=DCS.filter(d=>d.wp===dc.wp),i=l.indexOf(dc),n=l.length;return shade(wpOf(dc).color,n>1?-0.22+0.5*i/(n-1):0);}
 function ptColor(p){if(p.tbd)return TBD_COLOR;const l=PARTNERS.filter(q=>q.type===p.type&&!q.tbd),i=l.indexOf(p),n=l.length;return shade(TYPES[p.type].color,n>1?-0.15+0.6*i/(n-1):0);}
 function ribColor(l){return O.colorBy==='wp'?dcColor(dcById(l.dc)):O.colorBy==='kind'?KINDS[l.kind].color:ptColor(ptById(l.pt));}
+// DC box labels: auto picks white or dark per box for contrast; white/black use one colour throughout
+const dcTextColor=col=>O.dcText==='white'?'#FFFFFF':O.dcText==='black'?'#1E2328':lum(col)>0.21?'#1E2328':'#FFFFFF';
 const hostOf=d=>(ALL.find(l=>l.dc===d.id&&l.kind==='host')||{}).pt||'';
 const wOf=l=>l.kind==='host'?HOST_WEIGHT:SEC_WEIGHT;
 const links=()=>ALL.filter(l=>l.kind==='host'?hasHost():hasSec());
@@ -186,7 +188,7 @@ function buildCols(){
     });});
   out+=`<g>${ribs.join('')}</g>`;
   // DC boxes + WP labels
-  DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=lum(col)>0.21?'#1E2328':'#FFFFFF';
+  DCS.forEach((d,i)=>{const [y0,y1]=dy[i],col=dcColor(d),fc=dcTextColor(col);
     out+=`<g class="node" data-dc="${d.id}"><rect x="${-bx}" y="${f(y0)}" width="${2*bx}" height="${f(y1-y0)}" rx="3" fill="${col}"/>`+
       `<text x="0" y="${f((y0+y1)/2)}" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="15" fill="${fc}"><tspan font-weight="700">${esc(d.code)}</tspan>${hasHost()?'':`<tspan dx="7">${esc(hostOf(d))}</tspan>`}</text></g>`;});
   if(O.showWP)WPS.forEach(wp=>{const i=DCS.findIndex(d=>d.wp===wp.id);
@@ -236,7 +238,7 @@ function buildCirc(){
   // DC blocks
   DCS.forEach((d,i)=>{const [a0,a1]=pa[i],col=dcColor(d);
     out+=`<path class="node" data-dc="${d.id}" d="${annulus(a0,a1,R,R+PT)}" fill="${col}"/>`;
-    out+=`<g class="node" data-dc="${d.id}">`+arcText('cc'+i,a0,a1,R+PT/2+(isFlip(a0,a1)?4.5:-4.5),d.code,`font-size="13" font-weight="700" fill="${lum(col)>0.21?'#1E2328':'#FFFFFF'}"`)+'</g>';});
+    out+=`<g class="node" data-dc="${d.id}">`+arcText('cc'+i,a0,a1,R+PT/2+(isFlip(a0,a1)?4.5:-4.5),d.code,`font-size="13" font-weight="700" fill="${dcTextColor(col)}"`)+'</g>';});
   const rb=R+PT+42;
   if(O.showWP)WPS.forEach((wp,k)=>{const idx=DCS.map((d,i)=>d.wp===wp.id?i:-1).filter(i=>i>=0);const a0=pa[idx[0]][0],a1=pa[idx[idx.length-1]][1];
     out+=`<path d="${annulus(a0,a1,rb,rb+4)}" fill="${wp.color}"/>`+arcText('cw'+k,a0,a1,isFlip(a0,a1)?rb-8:rb-25,wp.name,`font-size="24" font-weight="500" fill="${wp.color}"`);});
@@ -271,6 +273,7 @@ function draw(){
   document.getElementById('optKey').checked=O.showKey;
   document.getElementById('optWP').checked=O.showWP;
   document.getElementById('optWPKey').checked=O.showWPKey;
+  document.querySelectorAll('[data-dctext]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dctext===O.dcText));
 }
 const set=(k,v)=>{O[k]=v;saveOpts();draw();};
 document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>set('colorBy',b.dataset.color)));
@@ -280,6 +283,7 @@ document.getElementById('optIcons').addEventListener('change',e=>set('showIcons'
 document.getElementById('optKey').addEventListener('change',e=>set('showKey',e.target.checked));
 document.getElementById('optWP').addEventListener('change',e=>set('showWP',e.target.checked));
 document.getElementById('optWPKey').addEventListener('change',e=>set('showWPKey',e.target.checked));
+document.querySelectorAll('[data-dctext]').forEach(b=>b.addEventListener('click',()=>set('dcText',b.dataset.dctext)));
 
 /* ---------- hover ---------- */
 const tip=document.getElementById('tip');
