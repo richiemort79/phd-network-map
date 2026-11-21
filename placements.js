@@ -97,7 +97,13 @@ const wpOf=dc=>WPS.find(w=>w.id===dc.wp);
 const dcById=id=>DCS.find(d=>d.id===id), ptById=id=>PARTNERS.find(p=>p.id===id);
 function dcColor(dc){const l=DCS.filter(d=>d.wp===dc.wp),i=l.indexOf(dc),n=l.length;return shade(wpOf(dc).color,n>1?-0.22+0.5*i/(n-1):0);}
 function ptColor(p){if(p.tbd)return TBD_COLOR;const l=PARTNERS.filter(q=>q.type===p.type&&!q.tbd),i=l.indexOf(p),n=l.length;return shade(TYPES[p.type].color,n>1?-0.15+0.6*i/(n-1):0);}
-function ribColor(l){return O.colorBy==='wp'?dcColor(dcById(l.dc)):O.colorBy==='kind'?KINDS[l.kind].color:ptColor(ptById(l.pt));}
+// coloured by work package, host links get a dark grey wash so they stand out from secondments and training
+const HOST_TINT='#2F3439', HOST_MIX=0.45;
+function mix(a,b,t){const p=h=>{const n=parseInt(h.slice(1),16);return [n>>16,n>>8&255,n&255];},x=p(a),y=p(b);
+  return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+const hostTint=c=>mix(c,HOST_TINT,HOST_MIX);
+function ribColor(l){const c=O.colorBy==='wp'?dcColor(dcById(l.dc)):O.colorBy==='kind'?KINDS[l.kind].color:ptColor(ptById(l.pt));
+  return O.colorBy==='wp'&&l.kind==='host'?hostTint(c):c;}
 // DC box labels: auto picks white or dark per box for contrast; white/black use one colour throughout
 const dcTextColor=col=>O.dcText==='white'?'#FFFFFF':O.dcText==='black'?'#1E2328':lum(col)>0.21?'#1E2328':'#FFFFFF';
 const hostOf=d=>(ALL.find(l=>l.dc===d.id&&l.kind==='host')||{}).pt||'';
@@ -184,6 +190,8 @@ function legend(x,yb){
   if(O.showLegend){
     if(O.colorBy==='kind')Object.entries(KINDS).filter(([k])=>shown(k)).forEach(([,k])=>sw(k.color,k.name));
     else if(O.colorBy==='wp'&&!O.showWPKey)WPS.forEach(w=>sw(w.color,w.name));
+    // say that the darker ribbons are the host links
+    if(O.colorBy==='wp'&&hasHost()&&(hasSec()||hasTrain()))sw(hostTint('#9AA3A8'),'Darker ribbon: host institution');
     rows.push(`<text x="${x}" y="{y}" fill="#5D666E" font-size="13.5">${widthNote()}</text>`);
   }
   return placeRows(rows,yb-(rows.length-1)*23);
