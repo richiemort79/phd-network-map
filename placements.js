@@ -98,7 +98,7 @@ const dcById=id=>DCS.find(d=>d.id===id), ptById=id=>PARTNERS.find(p=>p.id===id);
 function dcColor(dc){const l=DCS.filter(d=>d.wp===dc.wp),i=l.indexOf(dc),n=l.length;return shade(wpOf(dc).color,n>1?-0.22+0.5*i/(n-1):0);}
 function ptColor(p){if(p.tbd)return TBD_COLOR;const l=PARTNERS.filter(q=>q.type===p.type&&!q.tbd),i=l.indexOf(p),n=l.length;return shade(TYPES[p.type].color,n>1?-0.15+0.6*i/(n-1):0);}
 // coloured by work package, host links get a dark grey wash so they stand out from secondments and training
-const HOST_TINT='#2F3439', HOST_MIX=0.45;
+const HOST_TINT='#2F3439', HOST_MIX=0.55;
 function mix(a,b,t){const p=h=>{const n=parseInt(h.slice(1),16);return [n>>16,n>>8&255,n&255];},x=p(a),y=p(b);
   return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('');}
 const hostTint=c=>mix(c,HOST_TINT,HOST_MIX);
